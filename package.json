@@ -1,0 +1,20 @@
+{
+  "name": "com.knightforge.iconimporter",
+  "version": "0.0.0",
+  "displayName": "IconImporter",
+  "description": "Import and manage icons in Unity",
+  "unity": "2022.3",
+  "unityRelease": "0f1",
+  "keywords": [
+    "unity",
+    "unity3d",
+    "upm",
+    "knightforge",
+    "IconImporter"
+  ],
+  "author": {
+    "name": "Knight Forge",
+    "email": "dave@knightforge.co.uk",
+    "url": "https://www.knightforge.co.uk"
+  }
+}
