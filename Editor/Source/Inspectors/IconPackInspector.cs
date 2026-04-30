@@ -3,28 +3,22 @@ using UnityEngine;
 
 namespace KnightForge.IconImporter.Editor
 {
-    [CustomEditor(typeof(IconPackSO))]
-    public class IconPackSOInspector : UnityEditor.Editor
+    [CustomEditor(typeof(IconPack))]
+    public sealed class IconPackInspector : UnityEditor.Editor
     {
-        private SerializedProperty _packName;
         private SerializedProperty _provider;
-        private SerializedProperty _variant;
         private SerializedProperty _iconSize;
         private SerializedProperty _strokeWidth;
         private SerializedProperty _iconColor;
         private SerializedProperty _icons;
-        private SerializedProperty _selectedIconNames;
 
         private void OnEnable()
         {
-            _packName = serializedObject.FindProperty("packName");
             _provider = serializedObject.FindProperty("provider");
-            _variant = serializedObject.FindProperty("variant");
             _iconSize = serializedObject.FindProperty("iconSize");
             _strokeWidth = serializedObject.FindProperty("strokeWidth");
             _iconColor = serializedObject.FindProperty("iconColor");
             _icons = serializedObject.FindProperty("icons");
-            _selectedIconNames = serializedObject.FindProperty("selectedIconNames");
         }
 
         public override void OnInspectorGUI()
@@ -32,14 +26,10 @@ namespace KnightForge.IconImporter.Editor
             serializedObject.Update();
 
             EditorGUILayout.LabelField("Icon Pack Configuration", EditorStyles.boldLabel);
-            EditorGUILayout.PropertyField(_packName, new GUIContent("Pack Name"));
 
             EditorGUILayout.Space(10);
-            EditorGUILayout.LabelField("Provider Info", EditorStyles.boldLabel);
-            EditorGUI.BeginDisabledGroup(true);
-            EditorGUILayout.PropertyField(_provider, new GUIContent("Provider"));
-            EditorGUILayout.PropertyField(_variant, new GUIContent("Variant"));
-            EditorGUI.EndDisabledGroup();
+            EditorGUILayout.LabelField("Provider", EditorStyles.boldLabel);
+            EditorGUILayout.PropertyField(_provider, new GUIContent("Icon Provider"));
 
             EditorGUILayout.Space(10);
             EditorGUILayout.LabelField("Conversion Settings", EditorStyles.boldLabel);
@@ -49,12 +39,12 @@ namespace KnightForge.IconImporter.Editor
 
             EditorGUILayout.Space(10);
             EditorGUILayout.LabelField("Icons", EditorStyles.boldLabel);
-            EditorGUILayout.LabelField($"Imported Icons: {_icons.arraySize}");
+            EditorGUILayout.LabelField($"Imported: {_icons.arraySize}");
 
+            EditorGUI.BeginDisabledGroup(!_provider.objectReferenceValue);
             if (GUILayout.Button("Manage Icons", GUILayout.Height(30)))
-            {
-                OnManageIcons();
-            }
+                IconImportWindow.ShowWindow((IconPack)target);
+            EditorGUI.EndDisabledGroup();
 
             EditorGUILayout.Space(10);
             EditorGUI.BeginDisabledGroup(true);
@@ -62,12 +52,6 @@ namespace KnightForge.IconImporter.Editor
             EditorGUI.EndDisabledGroup();
 
             serializedObject.ApplyModifiedProperties();
-        }
-
-        private void OnManageIcons()
-        {
-            var pack = (IconPackSO)target;
-            IconSelectionWindow.ShowWindow(pack);
         }
     }
 }

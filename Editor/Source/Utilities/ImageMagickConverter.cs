@@ -1,8 +1,9 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.IO;
 using System.Diagnostics;
+using System.IO;
+using System.Text.RegularExpressions;
 using UnityEditor;
 using UnityEngine;
 using Debug = UnityEngine.Debug;
@@ -11,26 +12,57 @@ namespace KnightForge.IconImporter.Editor
 {
     public static class ImageMagickConverter
     {
-        private static string _convertPath;
-
         public static bool TryDetectImageMagick(out string executablePath)
         {
             executablePath = "";
 
             #if UNITY_EDITOR_WIN
-            var candidates = new[] {
+            var fixedCandidates = new[]
+            {
+                @"C:\Program Files\ImageMagick\magick.exe",
                 @"C:\Program Files\ImageMagick\convert.exe",
+                @"C:\Program Files (x86)\ImageMagick\magick.exe",
                 @"C:\Program Files (x86)\ImageMagick\convert.exe",
-                Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), @"ImageMagick\convert.exe")
             };
+
+            foreach (var candidate in fixedCandidates)
+            {
+                if (File.Exists(candidate))
+                {
+                    executablePath = candidate;
+                    return true;
+                }
+            }
+
+            var searchRoots = new[] { @"C:\Program Files", @"C:\Program Files (x86)" };
+            foreach (var root in searchRoots)
+            {
+                if (!Directory.Exists(root))
+                    continue;
+
+                foreach (var dir in Directory.GetDirectories(root, "ImageMagick*"))
+                {
+                    foreach (var exe in new[] { "magick.exe", "convert.exe" })
+                    {
+                        var path = Path.Combine(dir, exe);
+                        if (File.Exists(path))
+                        {
+                            executablePath = path;
+                            return true;
+                        }
+                    }
+                }
+            }
+
+            return false;
             #elif UNITY_EDITOR_OSX
-            var candidates = new[] {
+            var candidates = new[]
+            {
+                "/usr/local/bin/magick",
+                "/opt/homebrew/bin/magick",
                 "/usr/local/bin/convert",
                 "/opt/homebrew/bin/convert"
             };
-            #else
-            var candidates = new[] { "/usr/bin/convert" };
-            #endif
 
             foreach (var candidate in candidates)
             {
@@ -41,16 +73,54 @@ namespace KnightForge.IconImporter.Editor
                 }
             }
 
-            if (TryExecuteCommand("which convert", out var output))
+            if (TryExecuteCommand("which magick", out var output) || TryExecuteCommand("which convert", out output))
             {
                 executablePath = output.Trim();
                 return true;
             }
 
             return false;
+            #else
+            if (File.Exists("/usr/bin/magick")) { executablePath = "/usr/bin/magick"; return true; }
+            if (File.Exists("/usr/bin/convert")) { executablePath = "/usr/bin/convert"; return true; }
+
+            if (TryExecuteCommand("which magick", out var output) || TryExecuteCommand("which convert", out output))
+            {
+                executablePath = output.Trim();
+                return true;
+            }
+
+            return false;
+            #endif
         }
 
-        public static IEnumerator ConvertSvgsToPngs(List<string> iconNames, string variant, int size, float strokeWidth, Color color, string outputFolder, System.Action<string> progressCallback)
+        public static bool TryGeneratePreview(string svgPath, string outputPngPath, int size)
+        {
+            if (!TryDetectImageMagick(out var magickPath))
+                return false;
+
+            var tempSvgPath = outputPngPath + ".tmp.svg";
+            try
+            {
+                PreprocessSvg(svgPath, tempSvgPath, "#FFFFFF", 2f);
+                // Density calculated for 24x24 viewBox SVGs: size * 96 / 24 = size * 4 (SVG CSS pixels are 96dpi, not 72dpi)
+                var args = $"-background none -density {size * 4} \"{tempSvgPath}\" \"{outputPngPath}\"";
+                return ExecuteCommand(magickPath, args);
+            }
+            finally
+            {
+                if (File.Exists(tempSvgPath))
+                    File.Delete(tempSvgPath);
+            }
+        }
+
+        // resolveSvgPath maps (iconName, variant) to the source SVG file path.
+        // Output PNG names are "{iconName}-{variant}.png" to keep outline/filled distinct.
+        public static IEnumerator ConvertSvgsToPngs(
+            List<ImportedIcon> selectedIcons,
+            Func<string, string, string> resolveSvgPath,
+            int size, float strokeWidth, Color color,
+            string outputFolder, Action<string> progressCallback)
         {
             if (!TryDetectImageMagick(out var convertPath))
             {
@@ -58,47 +128,65 @@ namespace KnightForge.IconImporter.Editor
                 yield break;
             }
 
-            string projectPath = Path.GetDirectoryName(Application.dataPath);
-            string tablerPath = Path.Combine(projectPath, "~TablerIcons", variant);
+            Directory.CreateDirectory(outputFolder);
 
-            if (!Directory.Exists(outputFolder))
+            var tempFolder = Path.Combine(Path.GetTempPath(), "IconImporterTemp");
+            Directory.CreateDirectory(tempFolder);
+
+            var colorHex = ColorToHex(color);
+            var successCount = 0;
+
+            for (var i = 0; i < selectedIcons.Count; i++)
             {
-                Directory.CreateDirectory(outputFolder);
-            }
+                var icon = selectedIcons[i];
+                var svgPath = resolveSvgPath(icon.iconName, icon.variant);
+                var pngName = $"{icon.iconName}-{icon.variant}.png";
+                var pngPath = Path.Combine(outputFolder, pngName);
 
-            string colorHex = ColorToHex(color);
-            int successCount = 0;
-
-            for (int i = 0; i < iconNames.Count; i++)
-            {
-                string iconName = iconNames[i];
-                string svgPath = Path.Combine(tablerPath, $"{iconName}.svg");
-                string pngPath = Path.Combine(outputFolder, $"{iconName}.png");
-
-                progressCallback?.Invoke($"Converting {iconName}... ({i + 1}/{iconNames.Count})");
+                progressCallback?.Invoke($"Converting {icon.iconName} ({icon.variant})... ({i + 1}/{selectedIcons.Count})");
 
                 if (!File.Exists(svgPath))
                 {
-                    Debug.LogWarning($"SVG not found: {svgPath}");
+                    Debug.LogWarning($"SVG not found: '{svgPath}'.");
                     continue;
                 }
 
-                string args = $"\"{svgPath}\" -density 300 -background none -size {size}x{size} -resize {size}x{size} -fill \"{colorHex}\" -fuzz 10% -fill \"{colorHex}\" \"{pngPath}\"";
+                var tempSvgPath = Path.Combine(tempFolder, pngName.Replace(".png", "_temp.svg"));
+                PreprocessSvg(svgPath, tempSvgPath, colorHex, strokeWidth);
+
+                // -background none and -density must precede the input file so ImageMagick
+                // applies them during rasterization, not as post-read metadata.
+                // Density calculated for 24x24 viewBox SVGs: size * 96 / 24 = size * 4 (SVG CSS pixels are 96dpi, not 72dpi)
+                var args = $"-background none -density {size * 4} \"{tempSvgPath}\" \"{pngPath}\"";
 
                 if (ExecuteCommand(convertPath, args))
-                {
                     successCount++;
-                }
                 else
-                {
-                    Debug.LogError($"Failed to convert {iconName}");
-                }
+                    Debug.LogError($"Failed to convert '{icon.iconName}' ({icon.variant}).");
+
+                File.Delete(tempSvgPath);
 
                 yield return null;
             }
 
-            progressCallback?.Invoke($"Import complete! Converted {successCount}/{iconNames.Count} icons");
+            if (Directory.Exists(tempFolder))
+                Directory.Delete(tempFolder, true);
+
+            progressCallback?.Invoke($"Import complete! Converted {successCount}/{selectedIcons.Count} icons.");
             AssetDatabase.Refresh();
+        }
+
+        // Replaces currentColor with the target hex and overrides stroke-width so the rendered
+        // SVG matches the pack's color and stroke settings without relying on ImageMagick's
+        // color-replacement operators (which don't work on SVG stroke/fill attributes).
+        private static void PreprocessSvg(string sourcePath, string destPath, string colorHex, float strokeWidth)
+        {
+            var content = File.ReadAllText(sourcePath);
+
+            content = content.Replace("currentColor", colorHex);
+            content = Regex.Replace(content, @"stroke-width=""[^""]*""", $"stroke-width=\"{strokeWidth:F2}\"");
+
+            File.WriteAllText(destPath, content);
         }
 
         private static bool ExecuteCommand(string command, string args)
@@ -117,11 +205,19 @@ namespace KnightForge.IconImporter.Editor
 
                 using var process = Process.Start(processInfo);
                 process.WaitForExit();
+
+                if (process.ExitCode != 0)
+                {
+                    var error = process.StandardError.ReadToEnd();
+                    if (!string.IsNullOrEmpty(error))
+                        Debug.LogError($"ImageMagick: {error}");
+                }
+
                 return process.ExitCode == 0;
             }
             catch (Exception ex)
             {
-                Debug.LogError($"Error executing command: {ex.Message}");
+                Debug.LogError($"Error executing ImageMagick: {ex.Message}");
                 return false;
             }
         }
@@ -153,9 +249,9 @@ namespace KnightForge.IconImporter.Editor
 
         private static string ColorToHex(Color color)
         {
-            int r = Mathf.RoundToInt(color.r * 255);
-            int g = Mathf.RoundToInt(color.g * 255);
-            int b = Mathf.RoundToInt(color.b * 255);
+            var r = Mathf.RoundToInt(color.r * 255);
+            var g = Mathf.RoundToInt(color.g * 255);
+            var b = Mathf.RoundToInt(color.b * 255);
             return $"#{r:X2}{g:X2}{b:X2}";
         }
     }

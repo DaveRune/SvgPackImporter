@@ -54,6 +54,13 @@ namespace KnightForge.IconImporter.Editor
             Debug.Log($"Tabler Icons {releaseTag} downloaded and extracted.");
         }
 
+        public static IEnumerator FetchLatestVersion(Action<string> callback)
+        {
+            string latestTag = null;
+            yield return FetchReleaseUrl("latest", (url, tag) => latestTag = tag);
+            callback?.Invoke(latestTag);
+        }
+
         private static IEnumerator FetchReleaseUrl(string version, System.Action<string, string> callback)
         {
             string url = version == "latest"

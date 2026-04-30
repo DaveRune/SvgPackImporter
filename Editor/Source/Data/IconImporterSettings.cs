@@ -5,11 +5,11 @@ namespace KnightForge.IconImporter.Editor
 {
     public class IconImporterSettings : ScriptableObject
     {
-        public string tablerVersion = "latest";
         public string imageMagickPath = "";
         public bool imageMagickDetected = false;
+        public bool hasCompletedSetup = false;
 
-        private const string SettingsAssetPath = "Assets/Package/Editor/Resources/IconImporterSettings.asset";
+        private const string SettingsAssetPath = "Assets/Resources/IconImporterSettings.asset";
         private static IconImporterSettings _instance;
 
         public static IconImporterSettings Instance
@@ -22,8 +22,10 @@ namespace KnightForge.IconImporter.Editor
 
                     if (_instance == null)
                     {
+                        if (!AssetDatabase.IsValidFolder("Assets/Resources"))
+                            AssetDatabase.CreateFolder("Assets", "Resources");
+
                         _instance = CreateInstance<IconImporterSettings>();
-                        _instance.DetectImageMagick();
                         AssetDatabase.CreateAsset(_instance, SettingsAssetPath);
                         AssetDatabase.SaveAssets();
                     }

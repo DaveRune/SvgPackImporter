@@ -1,12 +1,11 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using UnityEngine;
 
 namespace KnightForge.IconImporter.Editor
 {
-    public static class ManifestBuilder
+    public static class TablerManifestBuilder
     {
         public static IconManifest BuildManifest(string tablerPath, string version)
         {
@@ -33,13 +32,13 @@ namespace KnightForge.IconImporter.Editor
 
             if (!File.Exists(aliasesPath))
             {
-                Debug.LogWarning($"aliases.json not found at {aliasesPath}");
+                Debug.LogWarning($"aliases.json not found at '{aliasesPath}'.");
                 return aliasMap;
             }
 
             try
             {
-                string json = File.ReadAllText(aliasesPath);
+                var json = File.ReadAllText(aliasesPath);
                 var aliasData = JsonUtility.FromJson<AliasData>("{\"data\":" + json + "}");
 
                 if (aliasData?.data != null)
@@ -47,13 +46,10 @@ namespace KnightForge.IconImporter.Editor
                     foreach (var entry in aliasData.data)
                     {
                         if (!aliasMap.ContainsKey(entry.name))
-                        {
                             aliasMap[entry.name] = new List<string>();
-                        }
+
                         if (entry.aliases != null)
-                        {
                             aliasMap[entry.name].AddRange(entry.aliases);
-                        }
                     }
                 }
             }
@@ -67,39 +63,34 @@ namespace KnightForge.IconImporter.Editor
 
         private static void ScanVariant(string tablerPath, string variant, IconManifest manifest, Dictionary<string, List<string>> aliasMap)
         {
-            string variantPath = Path.Combine(tablerPath, variant);
+            var variantPath = Path.Combine(tablerPath, variant);
 
             if (!Directory.Exists(variantPath))
             {
-                Debug.LogWarning($"Variant folder not found: {variantPath}");
+                Debug.LogWarning($"Variant folder not found: '{variantPath}'.");
                 return;
             }
 
-            var svgFiles = Directory.GetFiles(variantPath, "*.svg");
-
-            foreach (var svgFile in svgFiles)
+            foreach (var svgFile in Directory.GetFiles(variantPath, "*.svg"))
             {
-                string fileName = Path.GetFileNameWithoutExtension(svgFile);
-                var entry = new IconEntry
+                var fileName = Path.GetFileNameWithoutExtension(svgFile);
+                manifest.icons.Add(new IconEntry
                 {
                     name = fileName,
                     variant = variant,
                     aliases = aliasMap.ContainsKey(fileName) ? new List<string>(aliasMap[fileName]) : new List<string>()
-                };
-
-                manifest.icons.Add(entry);
+                });
             }
         }
 
         private static void SaveManifest(string tablerPath, IconManifest manifest)
         {
-            string manifestPath = Path.Combine(tablerPath, "manifest.json");
+            var manifestPath = Path.Combine(tablerPath, "manifest.json");
 
             try
             {
-                string json = JsonUtility.ToJson(manifest, true);
-                File.WriteAllText(manifestPath, json);
-                Debug.Log($"Manifest saved to {manifestPath} ({manifest.icons.Count} icons)");
+                File.WriteAllText(manifestPath, JsonUtility.ToJson(manifest, true));
+                Debug.Log($"Manifest saved to '{manifestPath}' ({manifest.icons.Count} icons).");
             }
             catch (Exception ex)
             {
