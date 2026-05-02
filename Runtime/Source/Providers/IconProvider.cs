@@ -3,9 +3,9 @@ using System.Collections.Generic;
 using System.IO;
 using UnityEngine;
 
-namespace KnightForge.IconImporter
+namespace KnightForge.IconImporter.Providers
 {
-    [CreateAssetMenu(menuName = "IconImporter/Icon Providers/Local")]
+    [CreateAssetMenu(menuName = IconImporterConstants.IconProviders + "Local", order = 1)]
     public class IconProvider : ScriptableObject
     {
         private const string ProvidersRoot = "IconProviders";
@@ -60,9 +60,15 @@ namespace KnightForge.IconImporter
             return manifest;
         }
 
-        protected virtual string GetManifestVersion() => "local";
+        protected virtual string GetManifestVersion()
+        {
+            return "local";
+        }
 
-        protected virtual Dictionary<string, List<string>> LoadAliases(string root) => new();
+        protected virtual Dictionary<string, List<string>> LoadAliases(string root)
+        {
+            return new Dictionary<string, List<string>>();
+        }
 
         private static void ScanVariant(string root, string variant, IconManifest manifest, Dictionary<string, List<string>> aliasMap)
         {

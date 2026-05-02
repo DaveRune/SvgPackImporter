@@ -33,7 +33,7 @@ namespace KnightForge.IconImporter.Editor.Utilities
             var outputFolder = Path.Combine(Application.temporaryCachePath, $"{pack.name}_icons");
 
             var toImport = pack.icons
-                .Where(icon => icon.provider != null)
+                .Where(icon => icon.provider)
                 .Select(icon => new ImportedIcon { iconName = icon.iconName, variant = icon.variant, provider = icon.provider })
                 .ToList();
 
@@ -78,8 +78,15 @@ namespace KnightForge.IconImporter.Editor.Utilities
             var existingSprites = new Dictionary<string, Sprite>();
 
             foreach (var asset in AssetDatabase.LoadAllAssetsAtPath(assetPath))
-                if (asset is Texture2D tex) existingTextures[tex.name] = tex;
-                else if (asset is Sprite spr) existingSprites[spr.name] = spr;
+                switch (asset)
+                {
+                    case Texture2D texture:
+                        existingTextures[texture.name] = texture;
+                        break;
+                    case Sprite sprite:
+                        existingSprites[sprite.name] = sprite;
+                        break;
+                }
 
             var keepAssets = new HashSet<Object> { targetPack };
             targetPack.icons.Clear();

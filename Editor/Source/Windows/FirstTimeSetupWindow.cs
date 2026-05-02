@@ -1,6 +1,8 @@
+using System;
 using System.IO;
 using KnightForge.IconImporter.Editor.Data;
 using KnightForge.IconImporter.Editor.Utilities;
+using KnightForge.IconImporter.Providers.BuiltIn;
 using UnityEditor;
 using UnityEngine;
 
@@ -34,7 +36,7 @@ namespace KnightForge.IconImporter.Editor.Windows
 
         public static void ShowSetupWindow()
         {
-            var window = GetWindow<FirstTimeSetupWindow>(true, "Icon Importer Setup", true);
+            var window = GetWindow<FirstTimeSetupWindow>(true, "IconImporter Setup", true);
             window.minSize = new Vector2(500, 400);
             window.maxSize = new Vector2(500, 400);
             window.ShowUtility();
@@ -50,7 +52,7 @@ namespace KnightForge.IconImporter.Editor.Windows
             };
 
             GUILayout.Space(10);
-            GUILayout.Label("Icon Importer  -  First Time Setup", style);
+            GUILayout.Label("IconImporter  -  First Time Setup", style);
             GUILayout.Space(6);
         }
 
@@ -88,7 +90,7 @@ namespace KnightForge.IconImporter.Editor.Windows
             var body = new GUIStyle(EditorStyles.wordWrappedLabel) { fontSize = 12 };
 
             GUILayout.Space(16);
-            GUILayout.Label("Welcome to Icon Importer!", EditorStyles.boldLabel);
+            GUILayout.Label("Welcome to IconImporter!", EditorStyles.boldLabel);
             GUILayout.Space(8);
             GUILayout.Label(
                 "This tool lets you import SVG icon packs into Unity, preview them, and batch-convert " +
@@ -250,14 +252,14 @@ namespace KnightForge.IconImporter.Editor.Windows
             }
             else
             {
-                GUILayout.Label("ImageMagick not configured. Set the path later via Tools > Icon Importer > Setup.", body);
+                GUILayout.Label("ImageMagick not configured. Set the path later via Tools > IconImporter > Setup.", body);
             }
 
             GUILayout.Space(10);
             GUILayout.Label(
                 "To get started:\n" +
                 "• Select a provider asset and click 'Download and Setup'\n" +
-                "• Right-click in the Project window and choose Create > IconImporter > Icon Packs > Icon Pack\n" +
+                "• Right-click in the Project window and choose Create > IconImporter > Icon Pack\n" +
                 "• Assign your provider to the pack and click 'Manage Icons'",
                 body);
 
@@ -283,7 +285,7 @@ namespace KnightForge.IconImporter.Editor.Windows
             if (!AssetDatabase.IsValidFolder("Assets/Resources/IconProviders"))
                 AssetDatabase.CreateFolder("Assets/Resources", "IconProviders");
 
-            var so = ScriptableObject.CreateInstance<TablerIconProvider>();
+            var so = CreateInstance<TablerIconProvider>();
             so.SetDefaults();
             AssetDatabase.CreateAsset(so, assetPath);
             AssetDatabase.SaveAssets();
@@ -316,8 +318,8 @@ namespace KnightForge.IconImporter.Editor.Windows
         }
 
         private static void DrawFooterButtons(
-            bool showBack, System.Action onBack = null,
-            string nextLabel = "Next", bool nextEnabled = true, System.Action onNext = null)
+            bool showBack, Action onBack = null,
+            string nextLabel = "Next", bool nextEnabled = true, Action onNext = null)
         {
             GUILayout.BeginHorizontal();
 

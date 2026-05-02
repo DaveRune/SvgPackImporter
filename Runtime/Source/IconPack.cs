@@ -1,10 +1,11 @@
 using System;
 using System.Collections.Generic;
+using KnightForge.IconImporter.Providers;
 using UnityEngine;
 
 namespace KnightForge.IconImporter
 {
-    [CreateAssetMenu(menuName = "IconImporter/Icon Packs/Icon Pack")]
+    [CreateAssetMenu(menuName = IconImporterConstants.IconPack, order = -1)]
     public sealed class IconPack : ScriptableObject
     {
         public List<PackedIcon> icons = new();

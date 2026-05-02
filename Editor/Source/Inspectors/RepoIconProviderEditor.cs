@@ -3,6 +3,7 @@ using System.Collections;
 using System.IO;
 using System.IO.Compression;
 using KnightForge.IconImporter.Editor.Utilities;
+using KnightForge.IconImporter.Providers;
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.Networking;
@@ -10,10 +11,10 @@ using UnityEngine.Networking;
 namespace KnightForge.IconImporter.Editor.Inspectors
 {
     [CustomEditor(typeof(RepoIconProvider), true)]
-    public class RepoIconProviderEditor : IconProviderEditor
+    public sealed class RepoIconProviderEditor : IconProviderEditor
     {
-        private bool _isDownloading;
         private bool _isCheckingUpdate;
+        private bool _isDownloading;
         private string _progressMessage;
         private string _updateCheckResult;
 
@@ -70,24 +71,23 @@ namespace KnightForge.IconImporter.Editor.Inspectors
             EditorGUI.EndDisabledGroup();
 
             EditorGUILayout.HelpBox(
-                "Downloads the icon pack from GitHub and extracts SVG files to the SVG Root Folder. " +
+                "Downloads the icon pack from GitHub and extracts SVG files to an \"IconImporter\" folder the project root. " +
                 "Run this when setting up or upgrading to a new version.",
                 MessageType.Info);
 
             if (!string.IsNullOrEmpty(_progressMessage))
                 EditorGUILayout.HelpBox(_progressMessage, MessageType.None);
 
-            if (_manifest != null)
-            {
-                EditorGUILayout.Space(4);
-                EditorGUI.BeginDisabledGroup(_isCheckingUpdate || _isDownloading);
-                if (GUILayout.Button(_isCheckingUpdate ? "Checking..." : "Check for Updates", GUILayout.Height(26)))
-                    OnCheckForUpdatesClicked(repoProvider);
-                EditorGUI.EndDisabledGroup();
+            if (_manifest == null) return;
+            
+            EditorGUILayout.Space(4);
+            EditorGUI.BeginDisabledGroup(_isCheckingUpdate || _isDownloading);
+            if (GUILayout.Button(_isCheckingUpdate ? "Checking..." : "Check for Updates", GUILayout.Height(26)))
+                OnCheckForUpdatesClicked(repoProvider);
+            EditorGUI.EndDisabledGroup();
 
-                if (!string.IsNullOrEmpty(_updateCheckResult))
-                    EditorGUILayout.HelpBox(_updateCheckResult, MessageType.None);
-            }
+            if (!string.IsNullOrEmpty(_updateCheckResult))
+                EditorGUILayout.HelpBox(_updateCheckResult, MessageType.None);
         }
 
         private void OnDownloadClicked(RepoIconProvider provider)
@@ -298,7 +298,7 @@ namespace KnightForge.IconImporter.Editor.Inspectors
             const string prefix = "https://github.com/";
             if (string.IsNullOrEmpty(repoUrl) || !repoUrl.StartsWith(prefix, StringComparison.Ordinal))
                 return null;
-            return repoUrl.Substring(prefix.Length).TrimEnd('/');
+            return repoUrl[prefix.Length..].TrimEnd('/');
         }
     }
 }

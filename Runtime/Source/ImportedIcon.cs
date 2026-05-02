@@ -1,4 +1,5 @@
 using System;
+using KnightForge.IconImporter.Providers;
 
 namespace KnightForge.IconImporter
 {

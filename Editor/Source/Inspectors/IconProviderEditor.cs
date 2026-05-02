@@ -1,4 +1,5 @@
 using System.IO;
+using KnightForge.IconImporter.Providers;
 using UnityEditor;
 using UnityEngine;
 
@@ -7,8 +8,8 @@ namespace KnightForge.IconImporter.Editor.Inspectors
     [CustomEditor(typeof(IconProvider), true)]
     public class IconProviderEditor : UnityEditor.Editor
     {
-        protected bool _manifestLoaded;
         protected IconManifest _manifest;
+        private bool _manifestLoaded;
 
         protected virtual void OnEnable()
         {
@@ -49,7 +50,9 @@ namespace KnightForge.IconImporter.Editor.Inspectors
             DrawVariantsList();
         }
 
-        protected virtual void DrawAdditionalContent(IconProvider provider) { }
+        protected virtual void DrawAdditionalContent(IconProvider provider)
+        {
+        }
 
         protected virtual void DrawManifestActions(IconProvider provider)
         {
@@ -84,6 +87,7 @@ namespace KnightForge.IconImporter.Editor.Inspectors
                 Directory.CreateDirectory(fullPath);
                 EditorUtility.RevealInFinder(fullPath);
             }
+
             EditorGUILayout.EndHorizontal();
 
             var projectName = Path.GetFileName(projectPath);
@@ -122,6 +126,7 @@ namespace KnightForge.IconImporter.Editor.Inspectors
                     Directory.CreateDirectory(variantPath);
                     EditorUtility.RevealInFinder(variantPath);
                 }
+
                 if (GUILayout.Button("✕", GUILayout.Width(22), GUILayout.Height(EditorGUIUtility.singleLineHeight)))
                     toRemove = i;
                 EditorGUILayout.EndHorizontal();

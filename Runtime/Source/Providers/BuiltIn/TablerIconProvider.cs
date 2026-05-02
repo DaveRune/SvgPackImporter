@@ -3,18 +3,23 @@ using System.Collections.Generic;
 using System.IO;
 using UnityEngine;
 
-namespace KnightForge.IconImporter
+namespace KnightForge.IconImporter.Providers.BuiltIn
 {
-    [CreateAssetMenu(menuName = "IconImporter/Icon Providers/Tabler")]
+    [CreateAssetMenu(menuName = IconImporterConstants.IconProviders + "Tabler", order = IconImporterConstants.IconProvidersBuiltIn)]
     public sealed class TablerIconProvider : RepoIconProvider
     {
         public override IReadOnlyDictionary<string, string> VariantPaths => new Dictionary<string, string>
         {
             { "outline", "icons/outline/" },
-            { "filled",  "icons/filled/"  }
+            { "filled", "icons/filled/" }
         };
 
         public override string AliasesZipPath => "aliases.json";
+
+        protected override void Reset()
+        {
+            SetDefaults();
+        }
 
         public void SetDefaults()
         {
@@ -22,8 +27,6 @@ namespace KnightForge.IconImporter
             _svgRootFolder = "Tabler";
             _repoUrl = "https://github.com/tabler/tabler-icons";
         }
-
-        protected override void Reset() => SetDefaults();
 
         protected override Dictionary<string, List<string>> LoadAliases(string root)
         {
@@ -56,9 +59,16 @@ namespace KnightForge.IconImporter
         }
 
         [Serializable]
-        private class AliasData { public AliasEntry[] data; }
+        private class AliasData
+        {
+            public AliasEntry[] data;
+        }
 
         [Serializable]
-        private class AliasEntry { public string name; public string[] aliases; }
+        private class AliasEntry
+        {
+            public string name;
+            public string[] aliases;
+        }
     }
 }

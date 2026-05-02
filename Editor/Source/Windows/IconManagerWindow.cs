@@ -8,6 +8,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using KnightForge.IconImporter.Editor.Utilities;
+using KnightForge.IconImporter.Providers;
 using UnityEditor;
 using UnityEngine;
 
@@ -15,17 +16,18 @@ namespace KnightForge.IconImporter.Editor.Windows
 {
     public sealed class IconManagerWindow : EditorWindow
     {
-        // ── Layout constants ──────────────────────────────────────────────────
+        // ── Constants ────────────────────────────────────────────────────────
         private const int IconPreviewSize = 50;
         private const int IconsPerPage = 50;
         private const int IconGridColumns = 10;
         private const int PreviewBorderWidth = 2;
 
-        // ── Colours ───────────────────────────────────────────────────────────
-        private static readonly Color UpdateColor    = new(0.25f, 0.65f, 0.25f);
-        private static readonly Color DangerColor    = new(0.75f, 0.25f, 0.25f);
-        private static readonly Color PendingAddColor = new(0.2f,  0.45f, 0.75f);
-        private static readonly Color VariantOnColor  = new(0.3f,  0.75f, 0.3f);
+        private const string NoVariantsName = "All";
+
+        private static readonly Color UpdateColor = new(0.25f, 0.65f, 0.25f);
+        private static readonly Color DangerColor = new(0.75f, 0.25f, 0.25f);
+        private static readonly Color PendingAddColor = new(0.2f, 0.45f, 0.75f);
+        private static readonly Color VariantOnColor = new(0.3f, 0.75f, 0.3f);
         private static readonly Color VariantOffColor = new(0.45f, 0.45f, 0.45f);
 
         // ── Preview throttle ──────────────────────────────────────────────────
@@ -33,41 +35,34 @@ namespace KnightForge.IconImporter.Editor.Windows
             Mathf.Max(1, Environment.ProcessorCount - 1),
             Mathf.Max(1, Environment.ProcessorCount - 1));
 
-        // ── Icon entry type ───────────────────────────────────────────────────
-        private readonly struct ProviderIconEntry
-        {
-            public readonly IconEntry Entry;
-            public readonly IconProvider Provider;
-            public ProviderIconEntry(IconEntry entry, IconProvider provider) { Entry = entry; Provider = provider; }
-        }
-
-        // ── State ─────────────────────────────────────────────────────────────
-        private IconPack _targetPack;
-        private List<IconProvider> _providers = new();
-        private List<string> _allVariants = new();
-        private HashSet<string> _activeVariants = new();
-
-        private readonly Dictionary<string, IconManifest> _manifestCache = new();
         private readonly List<ProviderIconEntry> _filteredBrowse = new();
         private readonly List<ProviderIconEntry> _filteredIncluded = new();
+
+        private readonly Dictionary<string, IconManifest> _manifestCache = new();
         private readonly Dictionary<string, ProviderIconEntry> _pendingAdditions = new();
         private readonly HashSet<string> _pendingDeletions = new();
 
         private readonly Dictionary<string, Texture2D> _previewCache = new();
         private readonly ConcurrentQueue<string> _readyToLoad = new();
-        private EditorCoroutine _previewCoroutine;
-        private string _previewTempFolder;
-        private int _inFlightCount;
-
-        private string _searchText = "";
+        private HashSet<string> _activeVariants = new();
+        private List<string> _allVariants = new();
         private int _browsePage;
-        private int _includedPage;
         private Vector2 _browseScroll;
-        private Vector2 _includedScroll;
-        private double _updateCompleteTime = -1;
+        private GUIStyle _centeredLabelStyle;
 
         private GUIStyle _iconCellStyle;
-        private GUIStyle _centeredLabelStyle;
+        private int _includedPage;
+        private Vector2 _includedScroll;
+        private int _inFlightCount;
+        private EditorCoroutine _previewCoroutine;
+        private string _previewTempFolder;
+        private List<IconProvider> _providers = new();
+
+        private string _searchText = "";
+
+        // ── State ─────────────────────────────────────────────────────────────
+        private IconPack _targetPack;
+        private double _updateCompleteTime = -1;
 
         // ── Lifecycle ─────────────────────────────────────────────────────────
 
@@ -82,15 +77,6 @@ namespace KnightForge.IconImporter.Editor.Windows
             foreach (var tex in _previewCache.Values.Where(t => t))
                 DestroyImmediate(tex);
             _previewCache.Clear();
-        }
-
-        public static void ShowWindow(IconPack pack)
-        {
-            var window = GetWindow<IconManagerWindow>("Icon Manager");
-            window._targetPack = pack;
-            window.minSize = new Vector2(522, 750);
-            window.maxSize = new Vector2(522, 2000);
-            window.InitialiseProviders();
         }
 
         // ── GUI ───────────────────────────────────────────────────────────────
@@ -122,6 +108,15 @@ namespace KnightForge.IconImporter.Editor.Windows
             DrawControls();
         }
 
+        public static void ShowWindow(IconPack pack)
+        {
+            var window = GetWindow<IconManagerWindow>("Icon Manager");
+            window._targetPack = pack;
+            window.minSize = new Vector2(522, 750);
+            window.maxSize = new Vector2(522, 2000);
+            window.InitialiseProviders();
+        }
+
         // ── Initialisation ────────────────────────────────────────────────────
 
         private void InitialiseProviders()
@@ -142,10 +137,10 @@ namespace KnightForge.IconImporter.Editor.Windows
             }
 
             _allVariants = variantSet
-                .OrderBy(v => string.IsNullOrEmpty(v) ? "Root" : v)
+                .OrderBy(v => string.IsNullOrEmpty(v) ? NoVariantsName : v)
                 .ToList();
 
-            if (_targetPack != null && _targetPack.activeVariants.Any())
+            if (_targetPack && _targetPack.activeVariants.Any())
                 _activeVariants = new HashSet<string>(_targetPack.activeVariants);
             else
                 _activeVariants = new HashSet<string>(_allVariants);
@@ -160,25 +155,34 @@ namespace KnightForge.IconImporter.Editor.Windows
         private void DrawVariantBar()
         {
             EditorGUILayout.LabelField("Variants", EditorStyles.boldLabel);
-            EditorGUILayout.BeginHorizontal();
 
             var changed = false;
-            foreach (var variant in _allVariants)
+            foreach (var provider in _providers)
             {
-                var label = string.IsNullOrEmpty(variant) ? "Root" : char.ToUpper(variant[0]) + variant[1..];
-                var wasActive = _activeVariants.Contains(variant);
+                EditorGUILayout.BeginHorizontal();
+                EditorGUILayout.LabelField(provider.name, EditorStyles.boldLabel, GUILayout.Width(150));
 
-                GUI.backgroundColor = wasActive ? VariantOnColor : VariantOffColor;
-                var isActive = GUILayout.Toggle(wasActive, label, EditorStyles.miniButton, GUILayout.Width(70));
-                GUI.backgroundColor = Color.white;
+                IEnumerable<string> variants = provider.Variants.Count == 0
+                    ? new[] { "" }
+                    : provider.Variants;
 
-                if (isActive == wasActive) continue;
-                if (isActive) _activeVariants.Add(variant);
-                else _activeVariants.Remove(variant);
-                changed = true;
+                foreach (var variant in variants)
+                {
+                    var label = string.IsNullOrEmpty(variant) ? NoVariantsName : char.ToUpper(variant[0]) + variant[1..];
+                    var wasActive = _activeVariants.Contains(variant);
+
+                    GUI.backgroundColor = wasActive ? VariantOnColor : VariantOffColor;
+                    var isActive = GUILayout.Toggle(wasActive, label, EditorStyles.miniButton, GUILayout.Width(70));
+                    GUI.backgroundColor = Color.white;
+
+                    if (isActive == wasActive) continue;
+                    if (isActive) _activeVariants.Add(variant);
+                    else _activeVariants.Remove(variant);
+                    changed = true;
+                }
+
+                EditorGUILayout.EndHorizontal();
             }
-
-            EditorGUILayout.EndHorizontal();
 
             if (changed)
             {
@@ -318,6 +322,7 @@ namespace KnightForge.IconImporter.Editor.Windows
                         if (isPendingAddition) _pendingAdditions.Remove(key);
                         else _pendingAdditions[key] = entry;
                     }
+
                     GUI.changed = true;
                 }
 
@@ -393,7 +398,7 @@ namespace KnightForge.IconImporter.Editor.Windows
         private bool DrawIconCell(ProviderIconEntry entry, IconCellState state)
         {
             var preview = GetPreview(entry);
-            var variantDisplay = string.IsNullOrEmpty(entry.Entry.variant) ? "Root" : entry.Entry.variant;
+            var variantDisplay = string.IsNullOrEmpty(entry.Entry.variant) ? NoVariantsName : entry.Entry.variant;
             var tooltip = $"{entry.Entry.name} ({variantDisplay}) [{entry.Provider.name}]";
 
             var cellRect = GUILayoutUtility.GetRect(IconPreviewSize, IconPreviewSize, _iconCellStyle,
@@ -411,9 +416,9 @@ namespace KnightForge.IconImporter.Editor.Windows
 
             switch (state)
             {
-                case IconCellState.Imported:       DrawBorder(cellRect, UpdateColor,     PreviewBorderWidth); break;
-                case IconCellState.PendingDeletion: DrawBorder(cellRect, DangerColor,    PreviewBorderWidth); break;
-                case IconCellState.PendingAdd:      DrawBorder(cellRect, PendingAddColor, PreviewBorderWidth); break;
+                case IconCellState.Imported: DrawBorder(cellRect, UpdateColor, PreviewBorderWidth); break;
+                case IconCellState.PendingDeletion: DrawBorder(cellRect, DangerColor, PreviewBorderWidth); break;
+                case IconCellState.PendingAdd: DrawBorder(cellRect, PendingAddColor, PreviewBorderWidth); break;
             }
 
             return clicked;
@@ -454,7 +459,10 @@ namespace KnightForge.IconImporter.Editor.Windows
                 Task.Run(async () =>
                 {
                     await GenerationThrottle.WaitAsync();
-                    try { ImageMagickConverter.TryGeneratePreview(svgPath, pngPath, IconPreviewSize); }
+                    try
+                    {
+                        ImageMagickConverter.TryGeneratePreview(svgPath, pngPath, IconPreviewSize);
+                    }
                     finally
                     {
                         GenerationThrottle.Release();
@@ -484,9 +492,11 @@ namespace KnightForge.IconImporter.Editor.Windows
                     _previewCache[key] = tex;
                     repaintNeeded = true;
                 }
+
                 if (repaintNeeded) Repaint();
                 yield return null;
             }
+
             _previewCoroutine = null;
         }
 
@@ -529,7 +539,7 @@ namespace KnightForge.IconImporter.Editor.Windows
                 .Where(i => i.provider != null && deletionKeys.Contains(EntryKey(i)))
                 .Select(i =>
                 {
-                    var v = string.IsNullOrEmpty(i.variant) ? "Root" : i.variant;
+                    var v = string.IsNullOrEmpty(i.variant) ? NoVariantsName : i.variant;
                     return $"{i.iconName} ({v}) [{i.provider?.name}]";
                 })
                 .ToList();
@@ -545,7 +555,7 @@ namespace KnightForge.IconImporter.Editor.Windows
                 sb.AppendLine($"  ... and {removed.Count - maxDisplay} more.");
             sb.AppendLine("\nContinue with update?");
 
-            return EditorUtility.DisplayDialog("Remove Icons?", sb.ToString(), "Remove & Update", "Cancel");
+            return EditorUtility.DisplayDialog("Remove Icons?", sb.ToString(), "Remove and Update", "Cancel");
         }
 
         // ── Filtering ─────────────────────────────────────────────────────────
@@ -584,24 +594,34 @@ namespace KnightForge.IconImporter.Editor.Windows
             }
         }
 
-        private bool MatchesSearch(IconEntry icon) =>
-            icon.name.Contains(_searchText, StringComparison.OrdinalIgnoreCase) ||
-            (icon.aliases != null && icon.aliases.Any(a =>
-                a.Contains(_searchText, StringComparison.OrdinalIgnoreCase)));
+        private bool MatchesSearch(IconEntry icon)
+        {
+            return icon.name.Contains(_searchText, StringComparison.OrdinalIgnoreCase) ||
+                   (icon.aliases != null && icon.aliases.Any(a =>
+                       a.Contains(_searchText, StringComparison.OrdinalIgnoreCase)));
+        }
 
         // ── Keys ──────────────────────────────────────────────────────────────
 
-        private static string ProviderKey(IconProvider provider) =>
-            AssetDatabase.AssetPathToGUID(AssetDatabase.GetAssetPath(provider));
+        private static string ProviderKey(IconProvider provider)
+        {
+            return AssetDatabase.AssetPathToGUID(AssetDatabase.GetAssetPath(provider));
+        }
 
-        private static string EntryKey(ProviderIconEntry entry) =>
-            $"{ProviderKey(entry.Provider)}/{entry.Entry.variant}/{entry.Entry.name}";
+        private static string EntryKey(ProviderIconEntry entry)
+        {
+            return $"{ProviderKey(entry.Provider)}/{entry.Entry.variant}/{entry.Entry.name}";
+        }
 
-        private static string EntryKey(IconPack.PackedIcon icon) =>
-            $"{ProviderKey(icon.provider)}/{icon.variant}/{icon.iconName}";
+        private static string EntryKey(IconPack.PackedIcon icon)
+        {
+            return $"{ProviderKey(icon.provider)}/{icon.variant}/{icon.iconName}";
+        }
 
-        private static string PreviewKey(ProviderIconEntry entry) =>
-            $"{ProviderKey(entry.Provider)}-{entry.Entry.name}-{entry.Entry.variant}";
+        private static string PreviewKey(ProviderIconEntry entry)
+        {
+            return $"{ProviderKey(entry.Provider)}-{entry.Entry.name}-{entry.Entry.variant}";
+        }
 
         // ── Helpers ───────────────────────────────────────────────────────────
 
@@ -619,6 +639,25 @@ namespace KnightForge.IconImporter.Editor.Windows
             };
         }
 
-        private enum IconCellState { NotImported, PendingAdd, Imported, PendingDeletion }
+        // ── Icon entry type ───────────────────────────────────────────────────
+        private readonly struct ProviderIconEntry
+        {
+            public readonly IconEntry Entry;
+            public readonly IconProvider Provider;
+
+            public ProviderIconEntry(IconEntry entry, IconProvider provider)
+            {
+                Entry = entry;
+                Provider = provider;
+            }
+        }
+
+        private enum IconCellState
+        {
+            NotImported,
+            PendingAdd,
+            Imported,
+            PendingDeletion
+        }
     }
 }

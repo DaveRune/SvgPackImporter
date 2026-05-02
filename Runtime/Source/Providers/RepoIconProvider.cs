@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-namespace KnightForge.IconImporter
+namespace KnightForge.IconImporter.Providers
 {
     public abstract class RepoIconProvider : IconProvider
     {
@@ -17,18 +17,21 @@ namespace KnightForge.IconImporter
         // Path fragment matching the aliases file entry in the ZIP. Null means no aliases file.
         public virtual string AliasesZipPath => null;
 
-        protected override string GetManifestVersion() => _version;
+        protected virtual void Reset()
+        {
+            _variants = new List<string>(VariantPaths.Keys);
+        }
+
+        protected override string GetManifestVersion()
+        {
+            return _version;
+        }
 
         public override IconManifest BuildManifest(string versionOverride = null)
         {
             if (_variants == null || _variants.Count == 0)
                 _variants = new List<string>(VariantPaths.Keys);
             return base.BuildManifest(versionOverride);
-        }
-
-        protected virtual void Reset()
-        {
-            _variants = new List<string>(VariantPaths.Keys);
         }
     }
 }

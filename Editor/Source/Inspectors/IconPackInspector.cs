@@ -65,13 +65,11 @@ namespace KnightForge.IconImporter.Editor.Inspectors
 
             GUI.backgroundColor = UpdateColor;
             if (GUILayout.Button("Update", GUILayout.Height(30)))
-            {
                 IconImportProcessor.StartUpdate(pack, this, () =>
                 {
                     _updateCompleteTime = EditorApplication.timeSinceStartup;
                     Repaint();
                 });
-            }
 
             GUI.backgroundColor = Color.white;
 
@@ -131,11 +129,11 @@ namespace KnightForge.IconImporter.Editor.Inspectors
 
         private void DrawIconGrid(IconPack pack)
         {
-            var totalCellSize = IconCellSize + IconCellSpacing;
+            const int totalCellSize = IconCellSize + IconCellSpacing;
             var availableWidth = EditorGUIUtility.currentViewWidth - 20f;
             var columns = Mathf.Max(1, Mathf.FloorToInt(availableWidth / totalCellSize));
 
-            var col = 0;
+            var column = 0;
             EditorGUILayout.BeginHorizontal();
 
             foreach (var icon in pack.icons)
@@ -178,13 +176,11 @@ namespace KnightForge.IconImporter.Editor.Inspectors
                         break;
                 }
 
-                col++;
-                if (col >= columns)
-                {
-                    EditorGUILayout.EndHorizontal();
-                    EditorGUILayout.BeginHorizontal();
-                    col = 0;
-                }
+                column++;
+                if (column < columns) continue;
+                EditorGUILayout.EndHorizontal();
+                EditorGUILayout.BeginHorizontal();
+                column = 0;
             }
 
             EditorGUILayout.EndHorizontal();
