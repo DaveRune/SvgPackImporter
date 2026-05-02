@@ -6,17 +6,17 @@ using UnityEditor;
 using UnityEngine;
 using UnityEngine.Networking;
 
-namespace KnightForge.IconImporter.Editor
+namespace KnightForge.IconImporter.Editor.Utilities
 {
     public static class IconPackImporter
     {
         private const string GitHubReleasesUrl = "https://api.github.com/repos/tabler/tabler-icons/releases";
         private const string TablerIconsFolder = "~TablerIcons";
 
-        public static IEnumerator ImportTablerIcons(string version, System.Action<string> progressCallback)
+        public static IEnumerator ImportTablerIcons(string version, Action<string> progressCallback)
         {
-            string projectPath = Path.GetDirectoryName(Application.dataPath);
-            string tablerPath = Path.Combine(projectPath, TablerIconsFolder);
+            var projectPath = Path.GetDirectoryName(Application.dataPath);
+            var tablerPath = Path.Combine(projectPath, TablerIconsFolder);
 
             progressCallback?.Invoke("Fetching release info...");
 
@@ -40,7 +40,7 @@ namespace KnightForge.IconImporter.Editor
             if (!Directory.Exists(tablerPath))
                 Directory.CreateDirectory(tablerPath);
 
-            bool extractSuccess = false;
+            var extractSuccess = false;
             yield return DownloadAndExtract(downloadUrl, tablerPath, success => extractSuccess = success);
 
             if (!extractSuccess)
@@ -61,9 +61,9 @@ namespace KnightForge.IconImporter.Editor
             callback?.Invoke(latestTag);
         }
 
-        private static IEnumerator FetchReleaseUrl(string version, System.Action<string, string> callback)
+        private static IEnumerator FetchReleaseUrl(string version, Action<string, string> callback)
         {
-            string url = version == "latest"
+            var url = version == "latest"
                 ? $"{GitHubReleasesUrl}/latest"
                 : $"{GitHubReleasesUrl}/tags/{version}";
 
@@ -80,9 +80,9 @@ namespace KnightForge.IconImporter.Editor
 
             try
             {
-                string json = request.downloadHandler.text;
+                var json = request.downloadHandler.text;
 
-                int tagStart = json.IndexOf("\"tag_name\":\"");
+                var tagStart = json.IndexOf("\"tag_name\":\"");
                 if (tagStart < 0)
                 {
                     Debug.LogError("tag_name not found in release response.");
@@ -90,11 +90,11 @@ namespace KnightForge.IconImporter.Editor
                     yield break;
                 }
 
-                int tagValStart = tagStart + 12;
-                int tagValEnd = json.IndexOf("\"", tagValStart);
-                string tag = json.Substring(tagValStart, tagValEnd - tagValStart);
+                var tagValStart = tagStart + 12;
+                var tagValEnd = json.IndexOf("\"", tagValStart);
+                var tag = json.Substring(tagValStart, tagValEnd - tagValStart);
 
-                string downloadUrl = $"https://github.com/tabler/tabler-icons/archive/refs/tags/{tag}.zip";
+                var downloadUrl = $"https://github.com/tabler/tabler-icons/archive/refs/tags/{tag}.zip";
                 callback(downloadUrl, tag);
             }
             catch (Exception ex)
@@ -104,9 +104,9 @@ namespace KnightForge.IconImporter.Editor
             }
         }
 
-        private static IEnumerator DownloadAndExtract(string downloadUrl, string tablerPath, System.Action<bool> callback)
+        private static IEnumerator DownloadAndExtract(string downloadUrl, string tablerPath, Action<bool> callback)
         {
-            string zipPath = Path.Combine(Path.GetDirectoryName(tablerPath), "tabler-icons-temp.zip");
+            var zipPath = Path.Combine(Path.GetDirectoryName(tablerPath), "tabler-icons-temp.zip");
 
             using var request = UnityWebRequest.Get(downloadUrl);
             yield return request.SendWebRequest();
@@ -139,34 +139,34 @@ namespace KnightForge.IconImporter.Editor
 
         private static void ExtractZip(string zipPath, string tablerPath)
         {
-            int fileCount = 0;
+            var fileCount = 0;
 
             using var zipArchive = ZipFile.OpenRead(zipPath);
             foreach (var entry in zipArchive.Entries)
             {
-                bool isOutlineIcon = entry.FullName.Contains("icons/outline/") && entry.FullName.EndsWith(".svg");
-                bool isFilledIcon = entry.FullName.Contains("icons/filled/") && entry.FullName.EndsWith(".svg");
-                bool isAliasFile = entry.FullName.EndsWith("aliases.json");
+                var isOutlineIcon = entry.FullName.Contains("icons/outline/") && entry.FullName.EndsWith(".svg");
+                var isFilledIcon = entry.FullName.Contains("icons/filled/") && entry.FullName.EndsWith(".svg");
+                var isAliasFile = entry.FullName.EndsWith("aliases.json");
 
                 if (isOutlineIcon)
                 {
-                    string destPath = Path.Combine(tablerPath, "outline", Path.GetFileName(entry.FullName));
+                    var destPath = Path.Combine(tablerPath, "outline", Path.GetFileName(entry.FullName));
                     Directory.CreateDirectory(Path.GetDirectoryName(destPath));
-                    entry.ExtractToFile(destPath, overwrite: true);
+                    entry.ExtractToFile(destPath, true);
                     fileCount++;
                 }
                 else if (isFilledIcon)
                 {
-                    string destPath = Path.Combine(tablerPath, "filled", Path.GetFileName(entry.FullName));
+                    var destPath = Path.Combine(tablerPath, "filled", Path.GetFileName(entry.FullName));
                     Directory.CreateDirectory(Path.GetDirectoryName(destPath));
-                    entry.ExtractToFile(destPath, overwrite: true);
+                    entry.ExtractToFile(destPath, true);
                     fileCount++;
                 }
                 else if (isAliasFile)
                 {
-                    string destPath = Path.Combine(tablerPath, "aliases.json");
+                    var destPath = Path.Combine(tablerPath, "aliases.json");
                     Directory.CreateDirectory(Path.GetDirectoryName(destPath));
-                    entry.ExtractToFile(destPath, overwrite: true);
+                    entry.ExtractToFile(destPath, true);
                     fileCount++;
                 }
             }

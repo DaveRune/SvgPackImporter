@@ -1,18 +1,20 @@
 using System.Collections;
 using System.IO;
+using KnightForge.IconImporter.Editor.Providers.Tabler;
+using KnightForge.IconImporter.Editor.Utilities;
 using UnityEditor;
 using UnityEngine;
 
-namespace KnightForge.IconImporter.Editor
+namespace KnightForge.IconImporter.Editor.Inspectors
 {
-    [CustomEditor(typeof(TablerIconProviderSO))]
-    public class TablerIconProviderSOInspector : UnityEditor.Editor
+    [CustomEditor(typeof(TablerIconProvider))]
+    public sealed class TablerIconProviderInspector : UnityEditor.Editor
     {
-        private bool _isDownloading;
-        private bool _isCheckingUpdate;
-        private string _progressMessage;
-        private string _installedVersion;
         private int _installedCount;
+        private string _installedVersion;
+        private bool _isCheckingUpdate;
+        private bool _isDownloading;
+        private string _progressMessage;
         private bool _statusLoaded;
         private string _updateCheckResult;
 
@@ -25,7 +27,7 @@ namespace KnightForge.IconImporter.Editor
         {
             serializedObject.Update();
 
-            var so = (TablerIconProviderSO)target;
+            var so = (TablerIconProvider)target;
 
             if (!_statusLoaded)
                 LoadInstalledStatus(so);
@@ -60,7 +62,7 @@ namespace KnightForge.IconImporter.Editor
                 EditorUtility.SetDirty(so);
         }
 
-        private void DrawInstalledStatus(TablerIconProviderSO so)
+        private void DrawInstalledStatus(TablerIconProvider so)
         {
             EditorGUILayout.LabelField("Status", EditorStyles.boldLabel);
 
@@ -87,7 +89,7 @@ namespace KnightForge.IconImporter.Editor
             }
         }
 
-        private void LoadInstalledStatus(TablerIconProviderSO so)
+        private void LoadInstalledStatus(TablerIconProvider so)
         {
             _statusLoaded = true;
             _installedVersion = "";
@@ -102,11 +104,9 @@ namespace KnightForge.IconImporter.Editor
             try
             {
                 var manifest = JsonUtility.FromJson<IconManifest>(File.ReadAllText(manifestPath));
-                if (manifest != null)
-                {
-                    _installedVersion = manifest.version;
-                    _installedCount = manifest.icons?.Count ?? 0;
-                }
+                if (manifest == null) return;
+                _installedVersion = manifest.version;
+                _installedCount = manifest.icons?.Count ?? 0;
             }
             catch
             {
@@ -114,7 +114,7 @@ namespace KnightForge.IconImporter.Editor
             }
         }
 
-        private void OnDownloadClicked(TablerIconProviderSO provider)
+        private void OnDownloadClicked(TablerIconProvider provider)
         {
             _isDownloading = true;
             _progressMessage = "";
@@ -122,9 +122,9 @@ namespace KnightForge.IconImporter.Editor
             EditorCoroutineUtility.StartCoroutine(DownloadWorkflow(provider), this);
         }
 
-        private IEnumerator DownloadWorkflow(TablerIconProviderSO provider)
+        private IEnumerator DownloadWorkflow(TablerIconProvider provider)
         {
-            var tablerPath = Path.Combine(Path.GetDirectoryName(Application.dataPath), provider.svgRootFolder);
+            var tablerPath = Path.Combine(Path.GetDirectoryName(Application.dataPath) ?? string.Empty, provider.svgRootFolder);
 
             yield return IconPackImporter.ImportTablerIcons(provider.version, progress =>
             {
@@ -155,7 +155,7 @@ namespace KnightForge.IconImporter.Editor
             Repaint();
         }
 
-        private void OnCheckForUpdatesClicked(TablerIconProviderSO provider)
+        private void OnCheckForUpdatesClicked(TablerIconProvider provider)
         {
             _isCheckingUpdate = true;
             _updateCheckResult = "Checking GitHub...";

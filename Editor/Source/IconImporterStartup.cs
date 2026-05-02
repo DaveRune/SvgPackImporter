@@ -1,3 +1,5 @@
+using KnightForge.IconImporter.Editor.Data;
+using KnightForge.IconImporter.Editor.Windows;
 using UnityEditor;
 
 namespace KnightForge.IconImporter.Editor
@@ -19,7 +21,7 @@ namespace KnightForge.IconImporter.Editor
 
         private static void EnsureProviders()
         {
-            TablerIconProvider.EnsureProviderSO();
+            Providers.Tabler.TablerIconProvider.EnsureProvider();
         }
     }
 }

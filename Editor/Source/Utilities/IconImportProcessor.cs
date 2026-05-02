@@ -1,13 +1,65 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
+using System.Linq;
+using KnightForge.IconImporter.Editor.Data;
+using KnightForge.IconImporter.Editor.Providers;
 using UnityEditor;
 using UnityEngine;
+using Debug = UnityEngine.Debug;
+using Object = UnityEngine.Object;
 
-namespace KnightForge.IconImporter.Editor
+namespace KnightForge.IconImporter.Editor.Utilities
 {
     public static class IconImportProcessor
     {
+        public static void StartUpdate(IconPack pack, IIconProvider provider, object coroutineOwner, Action onComplete = null)
+        {
+            var settings = IconImporterSettings.Instance;
+            if (!settings.imageMagickDetected)
+            {
+                var installNow = EditorUtility.DisplayDialog(
+                    "ImageMagick Not Found",
+                    "ImageMagick is required to convert SVGs to PNGs. Install it, then restart Unity.",
+                    "Open Website", "Cancel");
+
+                if (installNow)
+                    Process.Start("https://imagemagick.org/script/download.php");
+
+                return;
+            }
+
+            var outputFolder = Path.Combine(Application.temporaryCachePath, $"{pack.name}_icons");
+            var toImport = pack.icons.Select(icon => new ImportedIcon { iconName = icon.iconName, variant = icon.variant }).ToList();
+
+            EditorUtility.DisplayProgressBar("Updating Icons", "Starting conversion...", 0);
+
+            var convertRoutine = ImageMagickConverter.ConvertSvgsToPngs(
+                toImport,
+                (iconName, variant) => provider.GetSvgPath(iconName, variant),
+                pack.iconSize,
+                pack.strokeWidth,
+                pack.iconColor,
+                outputFolder,
+                progress => EditorUtility.DisplayProgressBar("Updating Icons", progress, 0.5f));
+
+            EditorCoroutineUtility.StartCoroutine(RunPipeline(convertRoutine, pack, toImport, outputFolder, onComplete), coroutineOwner);
+        }
+
+        private static IEnumerator RunPipeline(IEnumerator convertRoutine, IconPack pack, List<ImportedIcon> importedIcons, string outputFolder, Action onComplete)
+        {
+            while (convertRoutine.MoveNext())
+                yield return convertRoutine.Current;
+
+            EditorUtility.ClearProgressBar();
+
+            yield return EmbedIconsAsSubassets(pack, importedIcons, outputFolder);
+
+            onComplete?.Invoke();
+        }
+
         public static IEnumerator EmbedIconsAsSubassets(IconPack targetPack, List<ImportedIcon> selectedIcons, string outputFolder)
         {
             var assetPath = AssetDatabase.GetAssetPath(targetPack);
@@ -23,12 +75,10 @@ namespace KnightForge.IconImporter.Editor
             var existingSprites = new Dictionary<string, Sprite>();
 
             foreach (var asset in AssetDatabase.LoadAllAssetsAtPath(assetPath))
-            {
                 if (asset is Texture2D tex) existingTextures[tex.name] = tex;
                 else if (asset is Sprite spr) existingSprites[spr.name] = spr;
-            }
 
-            var keepAssets = new HashSet<UnityEngine.Object> { targetPack };
+            var keepAssets = new HashSet<Object> { targetPack };
             targetPack.icons.Clear();
 
             var embedded = 0;
@@ -65,7 +115,7 @@ namespace KnightForge.IconImporter.Editor
                     if (!texture.LoadImage(bytes))
                     {
                         Debug.LogError($"Failed to load PNG bytes for icon '{assetName}'.");
-                        UnityEngine.Object.DestroyImmediate(texture);
+                        Object.DestroyImmediate(texture);
                         continue;
                     }
 
@@ -76,20 +126,20 @@ namespace KnightForge.IconImporter.Editor
 
                 // Reuse the sprite only if its rect still matches the texture dimensions.
                 // If iconSize changed between imports, the rect is stale and must be recreated.
-                existingSprites.TryGetValue(assetName, out var existingSpr);
-                var rectMatches = existingSpr != null
-                    && (int)existingSpr.rect.width == texture.width
-                    && (int)existingSpr.rect.height == texture.height;
+                existingSprites.TryGetValue(assetName, out var existingSprite);
+                var rectMatches = existingSprite
+                                  && (int)existingSprite.rect.width == texture.width
+                                  && (int)existingSprite.rect.height == texture.height;
 
                 Sprite sprite;
                 if (rectMatches)
                 {
-                    sprite = existingSpr;
+                    sprite = existingSprite;
                 }
                 else
                 {
-                    if (existingSpr != null)
-                        AssetDatabase.RemoveObjectFromAsset(existingSpr);
+                    if (existingSprite)
+                        AssetDatabase.RemoveObjectFromAsset(existingSprite);
 
                     sprite = Sprite.Create(
                         texture,
@@ -115,10 +165,8 @@ namespace KnightForge.IconImporter.Editor
             }
 
             foreach (var asset in AssetDatabase.LoadAllAssetsAtPath(assetPath))
-            {
                 if (!keepAssets.Contains(asset))
                     AssetDatabase.RemoveObjectFromAsset(asset);
-            }
 
             if (Directory.Exists(outputFolder))
                 Directory.Delete(outputFolder, true);

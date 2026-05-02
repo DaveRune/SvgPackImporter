@@ -1,14 +1,18 @@
+using System;
 using System.Collections;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using KnightForge.IconImporter.Editor.Providers;
+using KnightForge.IconImporter.Editor.Utilities;
 using UnityEditor;
 using UnityEngine;
 
-namespace KnightForge.IconImporter.Editor
+namespace KnightForge.IconImporter.Editor.Windows
 {
     public sealed class IconImportWindow : EditorWindow
     {
@@ -17,66 +21,48 @@ namespace KnightForge.IconImporter.Editor
         private const int IconGridColumns = 10;
         private const int PreviewBorderWidth = 2;
 
-        private enum IconCellState
-        {
-            NotImported,
-            PendingAdd,
-            Imported,
-            PendingDeletion
-        }
+        // Throttle concurrent ImageMagick processes to keep one core free for the editor.
+        private static readonly SemaphoreSlim GenerationThrottle = new(
+            Mathf.Max(1, Environment.ProcessorCount - 1),
+            Mathf.Max(1, Environment.ProcessorCount - 1));
 
-        private IconPack _targetPack;
-        private IIconProvider _provider;
-        private IconManifest _manifest;
+        private static readonly Color UpdateColor = new(0.25f, 0.65f, 0.25f); // green — imported, included in next update
+        private static readonly Color DangerColor = new(0.75f, 0.25f, 0.25f); // red   — imported, marked for deletion
+        private static readonly Color PendingAddColor = new(0.2f, 0.45f, 0.75f); // blue  — not yet imported, marked for adding
 
         // Browse grid state
         private readonly List<IconEntry> _filteredBrowse = new();
-        private Vector2 _browseScroll;
-        private int _browsePage = 0;
 
         // Included grid state
         private readonly List<IconEntry> _filteredIncluded = new();
-        private Vector2 _includedScroll;
-        private int _includedPage = 0;
-
-        private string _searchText = "";
-        private HashSet<string> _activeVariants = new();
+        private readonly HashSet<string> _pendingAdditions = new();
 
         private readonly HashSet<string> _pendingDeletions = new();
-        private readonly HashSet<string> _pendingAdditions = new();
-        private double _updateCompleteTime = -1;
 
         // Preview cache — keys with null value are in-flight; non-null are ready.
         private readonly Dictionary<string, Texture2D> _previewCache = new();
 
         // PNGs written by background tasks that are ready to load as Texture2D on the main thread.
         private readonly ConcurrentQueue<string> _readyToLoad = new();
-        private int _inFlightCount;
-        private string _previewTempFolder;
-        private EditorCoroutine _previewCoroutine;
-
-        // Throttle concurrent ImageMagick processes to keep one core free for the editor.
-        private static readonly SemaphoreSlim GenerationThrottle = new(
-            Mathf.Max(1, System.Environment.ProcessorCount - 1),
-            Mathf.Max(1, System.Environment.ProcessorCount - 1));
+        private HashSet<string> _activeVariants = new();
+        private int _browsePage;
+        private Vector2 _browseScroll;
+        private GUIStyle _centeredLabelStyle;
 
         // Styles (lazily initialised in EnsureStyles — must not be created in field initialisers)
         private GUIStyle _iconCellStyle;
-        private GUIStyle _centeredLabelStyle;
+        private int _includedPage;
+        private Vector2 _includedScroll;
+        private int _inFlightCount;
+        private IconManifest _manifest;
+        private EditorCoroutine _previewCoroutine;
+        private string _previewTempFolder;
+        private IIconProvider _provider;
 
-        private static readonly Color UpdateColor = new(0.25f, 0.65f, 0.25f); // green — imported, included in next update
-        private static readonly Color DangerColor = new(0.75f, 0.25f, 0.25f); // red   — imported, marked for deletion
-        private static readonly Color PendingAddColor = new(0.2f, 0.45f, 0.75f); // blue  — not yet imported, marked for adding
+        private string _searchText = "";
 
-        public static void ShowWindow(IconPack pack)
-        {
-            var window = GetWindow<IconImportWindow>("Icon Import");
-            window._targetPack = pack;
-            window.minSize = new Vector2(522, 750);
-            window.maxSize = new Vector2(522, 2000);
-            window.InitialiseProvider();
-            window.RefreshFiltered();
-        }
+        private IconPack _targetPack;
+        private double _updateCompleteTime = -1;
 
         private void OnEnable()
         {
@@ -92,6 +78,43 @@ namespace KnightForge.IconImporter.Editor
                 DestroyImmediate(texture);
 
             _previewCache.Clear();
+        }
+
+        private void OnGUI()
+        {
+            if (!_targetPack)
+            {
+                EditorGUILayout.HelpBox("No icon pack loaded. Close and reopen from the pack inspector.", MessageType.Warning);
+                return;
+            }
+
+            if (_provider == null)
+            {
+                EditorGUILayout.HelpBox("No icon provider assigned. Assign a provider in the pack inspector.", MessageType.Warning);
+                return;
+            }
+
+            if (_manifest == null)
+            {
+                EditorGUILayout.HelpBox("No icon manifest loaded. Import icons first.", MessageType.Info);
+                return;
+            }
+
+            DrawProviderVariantBar();
+            DrawSearchBar();
+            DrawIncludedGrid();
+            DrawBrowseGrid();
+            DrawControls();
+        }
+
+        public static void ShowWindow(IconPack pack)
+        {
+            var window = GetWindow<IconImportWindow>("Icon Import");
+            window._targetPack = pack;
+            window.minSize = new Vector2(522, 750);
+            window.maxSize = new Vector2(522, 2000);
+            window.InitialiseProvider();
+            window.RefreshFiltered();
         }
 
         private void EnsureStyles()
@@ -130,33 +153,6 @@ namespace KnightForge.IconImporter.Editor
 
             _pendingDeletions.Clear();
             _pendingAdditions.Clear();
-        }
-
-        private void OnGUI()
-        {
-            if (!_targetPack)
-            {
-                EditorGUILayout.HelpBox("No icon pack loaded. Close and reopen from the pack inspector.", MessageType.Warning);
-                return;
-            }
-
-            if (_provider == null)
-            {
-                EditorGUILayout.HelpBox("No icon provider assigned. Assign a provider in the pack inspector.", MessageType.Warning);
-                return;
-            }
-
-            if (_manifest == null)
-            {
-                EditorGUILayout.HelpBox("No icon manifest loaded. Import icons first.", MessageType.Info);
-                return;
-            }
-
-            DrawProviderVariantBar();
-            DrawSearchBar();
-            DrawIncludedGrid();
-            DrawBrowseGrid();
-            DrawControls();
         }
 
         private void DrawProviderVariantBar()
@@ -229,7 +225,7 @@ namespace KnightForge.IconImporter.Editor
                 var isPendingDeletion = _pendingDeletions.Contains(key);
                 var state = isPendingDeletion ? IconCellState.PendingDeletion : IconCellState.Imported;
 
-                if (DrawIconCell(icon.name, icon.variant, state, showVariantHint: true))
+                if (DrawIconCell(icon.name, icon.variant, state, true))
                 {
                     if (isPendingDeletion)
                         _pendingDeletions.Remove(key);
@@ -255,19 +251,13 @@ namespace KnightForge.IconImporter.Editor
             if (GUILayout.Button("Next >", GUILayout.Width(70))) _includedPage = Mathf.Min(pageCount - 1, _includedPage + 1);
             GUILayout.FlexibleSpace();
             if (_pendingDeletions.Any())
-            {
                 if (GUILayout.Button("Unmark all", GUILayout.Width(90)))
-                {
                     foreach (var icon in _targetPack.icons)
                         _pendingDeletions.Remove(PendingKey(icon.iconName, icon.variant));
-                }
-            }
 
             if (GUILayout.Button("Mark all for removal", GUILayout.Width(130)))
-            {
                 foreach (var icon in _targetPack.icons)
                     _pendingDeletions.Add(PendingKey(icon.iconName, icon.variant));
-            }
 
             GUI.backgroundColor = Color.white;
             EditorGUILayout.EndHorizontal();
@@ -380,7 +370,10 @@ namespace KnightForge.IconImporter.Editor
             return clicked;
         }
 
-        private static string PendingKey(string iconName, string variant) => $"{variant}/{iconName}";
+        private static string PendingKey(string iconName, string variant)
+        {
+            return $"{variant}/{iconName}";
+        }
 
         private static void DrawBorder(Rect rect, Color color, int width)
         {
@@ -472,7 +465,7 @@ namespace KnightForge.IconImporter.Editor
             var removeCount = _pendingDeletions.Count;
 
             GUILayout.Space(10);
-            
+
             if (addCount > 0 || removeCount > 0)
             {
                 EditorGUILayout.BeginHorizontal();
@@ -508,7 +501,7 @@ namespace KnightForge.IconImporter.Editor
                 normal = { textColor = UpdateColor },
                 fontStyle = FontStyle.Bold
             };
-            
+
             EditorGUILayout.BeginHorizontal();
             GUILayout.FlexibleSpace();
             GUILayout.Label("Update complete.", successStyle);
@@ -545,52 +538,14 @@ namespace KnightForge.IconImporter.Editor
             _pendingAdditions.Clear();
             RefreshFiltered();
 
-            var settings = IconImporterSettings.Instance;
-
-            if (!settings.imageMagickDetected)
-            {
-                var installNow = EditorUtility.DisplayDialog(
-                    "ImageMagick Not Found",
-                    "ImageMagick is required to convert SVGs to PNGs. Install it, then restart Unity.",
-                    "Open Website", "Cancel");
-
-                if (installNow)
-                    System.Diagnostics.Process.Start("https://imagemagick.org/script/download.php");
-
-                return;
-            }
-
             if (!ConfirmIfWillRemoveIcons())
                 return;
 
-            var outputFolder = Path.Combine(Application.temporaryCachePath, $"{_targetPack.name}_icons");
-            var toImport = _targetPack.icons.Select(icon => new ImportedIcon { iconName = icon.iconName, variant = icon.variant }).ToList();
-
-            EditorUtility.DisplayProgressBar("Updating Icons", "Starting conversion...", 0);
-
-            var convertRoutine = ImageMagickConverter.ConvertSvgsToPngs(
-                toImport,
-                (iconName, variant) => _provider.GetSvgPath(iconName, variant),
-                _targetPack.iconSize,
-                _targetPack.strokeWidth,
-                _targetPack.iconColor,
-                outputFolder,
-                progress => EditorUtility.DisplayProgressBar("Updating Icons", progress, 0.5f));
-
-            EditorCoroutineUtility.StartCoroutine(RunImportPipeline(convertRoutine, toImport, outputFolder), this);
-        }
-
-        private IEnumerator RunImportPipeline(IEnumerator convertRoutine, List<ImportedIcon> importedIcons, string outputFolder)
-        {
-            while (convertRoutine.MoveNext())
-                yield return convertRoutine.Current;
-
-            EditorUtility.ClearProgressBar();
-
-            yield return IconImportProcessor.EmbedIconsAsSubassets(_targetPack, importedIcons, outputFolder);
-
-            _updateCompleteTime = EditorApplication.timeSinceStartup;
-            Repaint();
+            IconImportProcessor.StartUpdate(_targetPack, _provider, this, () =>
+            {
+                _updateCompleteTime = EditorApplication.timeSinceStartup;
+                Repaint();
+            });
         }
 
         private bool ConfirmIfWillRemoveIcons()
@@ -604,7 +559,7 @@ namespace KnightForge.IconImporter.Editor
             if (removed.Count == 0)
                 return true;
 
-            var sb = new System.Text.StringBuilder();
+            var sb = new StringBuilder();
             sb.AppendLine($"{removed.Count} icon(s) will be removed. Any references to them in the project will be lost:\n");
 
             const int maxDisplay = 10;
@@ -638,21 +593,27 @@ namespace KnightForge.IconImporter.Editor
                 var key = $"{icon.variant}/{icon.name}";
 
                 if (currentIconKeys.Contains(key))
-                {
-                    if (!hasSearch || icon.name.Contains(_searchText, System.StringComparison.OrdinalIgnoreCase))
+                    if (!hasSearch || icon.name.Contains(_searchText, StringComparison.OrdinalIgnoreCase))
                         _filteredIncluded.Add(icon);
-                }
 
                 if (hasSearch)
                 {
-                    var nameMatch = icon.name.Contains(_searchText, System.StringComparison.OrdinalIgnoreCase);
-                    var aliasMatch = !nameMatch && icon.aliases != null && icon.aliases.Any(a => a.Contains(_searchText, System.StringComparison.OrdinalIgnoreCase));
+                    var nameMatch = icon.name.Contains(_searchText, StringComparison.OrdinalIgnoreCase);
+                    var aliasMatch = !nameMatch && icon.aliases != null && icon.aliases.Any(a => a.Contains(_searchText, StringComparison.OrdinalIgnoreCase));
                     if (!nameMatch && !aliasMatch)
                         continue;
                 }
 
                 _filteredBrowse.Add(icon);
             }
+        }
+
+        private enum IconCellState
+        {
+            NotImported,
+            PendingAdd,
+            Imported,
+            PendingDeletion
         }
     }
 }

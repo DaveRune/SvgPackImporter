@@ -1,26 +1,20 @@
+using System;
 using System.IO;
+using KnightForge.IconImporter.Editor.Data;
+using KnightForge.IconImporter.Editor.Utilities;
 using UnityEditor;
 using UnityEngine;
 
-namespace KnightForge.IconImporter.Editor
+namespace KnightForge.IconImporter.Editor.Windows
 {
-    public class FirstTimeSetupWindow : EditorWindow
+    public sealed class FirstTimeSetupWindow : EditorWindow
     {
+        private static readonly string[] StepTitles = { "Welcome", "ImageMagick", "Done" };
         private int _currentStep;
         private string _detectedPath = "";
         private string _manualPath = "";
-        private bool _searchPerformed;
         private bool _pathVerified;
-
-        private static readonly string[] StepTitles = { "Welcome", "ImageMagick", "Done" };
-
-        public static void ShowSetupWindow()
-        {
-            var window = GetWindow<FirstTimeSetupWindow>(true, "Icon Importer Setup", true);
-            window.minSize = new Vector2(500, 360);
-            window.maxSize = new Vector2(500, 360);
-            window.ShowUtility();
-        }
+        private bool _searchPerformed;
 
         private void OnGUI()
         {
@@ -34,6 +28,14 @@ namespace KnightForge.IconImporter.Editor
                 case 1: DrawImageMagickStep(); break;
                 case 2: DrawCompleteStep(); break;
             }
+        }
+
+        public static void ShowSetupWindow()
+        {
+            var window = GetWindow<FirstTimeSetupWindow>(true, "Icon Importer Setup", true);
+            window.minSize = new Vector2(500, 360);
+            window.maxSize = new Vector2(500, 360);
+            window.ShowUtility();
         }
 
         private void DrawHeader()
@@ -55,7 +57,7 @@ namespace KnightForge.IconImporter.Editor
             GUILayout.BeginHorizontal();
             GUILayout.FlexibleSpace();
 
-            for (int i = 0; i < StepTitles.Length; i++)
+            for (var i = 0; i < StepTitles.Length; i++)
             {
                 var style = new GUIStyle(EditorStyles.miniLabel);
 
@@ -94,7 +96,7 @@ namespace KnightForge.IconImporter.Editor
 
             GUILayout.FlexibleSpace();
             DrawSeparator();
-            DrawFooterButtons(showBack: false, nextLabel: "Next  ›", nextEnabled: true, onNext: () => _currentStep = 1);
+            DrawFooterButtons(false, nextLabel: "Next  ›", nextEnabled: true, onNext: () => _currentStep = 1);
         }
 
         private void DrawImageMagickStep()
@@ -162,8 +164,8 @@ namespace KnightForge.IconImporter.Editor
 
             if (GUILayout.Button("Browse", GUILayout.Width(60)))
             {
-                string filter = Application.platform == RuntimePlatform.WindowsEditor ? "exe" : "";
-                string picked = EditorUtility.OpenFilePanel("Select ImageMagick executable", "", filter);
+                var filter = Application.platform == RuntimePlatform.WindowsEditor ? "exe" : "";
+                var picked = EditorUtility.OpenFilePanel("Select ImageMagick executable", "", filter);
                 if (!string.IsNullOrEmpty(picked))
                 {
                     _manualPath = picked;
@@ -177,12 +179,16 @@ namespace KnightForge.IconImporter.Editor
             GUILayout.FlexibleSpace();
             DrawSeparator();
 
-            bool hasPath = !string.IsNullOrEmpty(_manualPath);
-            string label = hasPath ? "Save & Continue  ›" : "Skip  ›";
+            var hasPath = !string.IsNullOrEmpty(_manualPath);
+            var label = hasPath ? "Save & Continue  ›" : "Skip  ›";
             DrawFooterButtons(
-                showBack: true, onBack: () => _currentStep = 0,
-                nextLabel: label, nextEnabled: true,
-                onNext: () => { SaveSettings(); _currentStep = 2; });
+                true, () => _currentStep = 0,
+                label, true,
+                () =>
+                {
+                    SaveSettings();
+                    _currentStep = 2;
+                });
         }
 
         private void DrawCompleteStep()
@@ -209,13 +215,13 @@ namespace KnightForge.IconImporter.Editor
 
             GUILayout.FlexibleSpace();
             DrawSeparator();
-            DrawFooterButtons(showBack: true, onBack: () => _currentStep = 1, nextLabel: "Finish", nextEnabled: true, onNext: Close);
+            DrawFooterButtons(true, () => _currentStep = 1, "Finish", true, Close);
         }
 
         private void SaveSettings()
         {
             var settings = IconImporterSettings.Instance;
-            string pathToSave = !string.IsNullOrEmpty(_manualPath) ? _manualPath : _detectedPath;
+            var pathToSave = !string.IsNullOrEmpty(_manualPath) ? _manualPath : _detectedPath;
 
             if (!string.IsNullOrEmpty(pathToSave) && File.Exists(pathToSave))
             {
@@ -236,16 +242,14 @@ namespace KnightForge.IconImporter.Editor
         }
 
         private static void DrawFooterButtons(
-            bool showBack, System.Action onBack = null,
-            string nextLabel = "Next", bool nextEnabled = true, System.Action onNext = null)
+            bool showBack, Action onBack = null,
+            string nextLabel = "Next", bool nextEnabled = true, Action onNext = null)
         {
             GUILayout.BeginHorizontal();
 
             if (showBack)
-            {
                 if (GUILayout.Button("‹  Back", GUILayout.Width(80), GUILayout.Height(28)))
                     onBack?.Invoke();
-            }
 
             GUILayout.FlexibleSpace();
 

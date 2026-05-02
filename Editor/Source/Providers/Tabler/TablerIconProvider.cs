@@ -3,28 +3,26 @@ using System.IO;
 using UnityEditor;
 using UnityEngine;
 
-namespace KnightForge.IconImporter.Editor
+namespace KnightForge.IconImporter.Editor.Providers.Tabler
 {
-    public class TablerIconProvider : IIconProvider
+    public sealed class TablerIconProvider : IIconProvider
     {
-        private static readonly string[] _variants = { "outline", "filled" };
+        private static readonly string[] Variants = { "outline", "filled" };
         private readonly string _tablerRoot;
-
-        public string ProviderName => "Tabler";
-        public IReadOnlyList<string> AvailableVariants => _variants;
 
         public TablerIconProvider(string svgRootFolder = "~TablerIcons")
         {
-            _tablerRoot = Path.Combine(Path.GetDirectoryName(Application.dataPath), svgRootFolder);
+            _tablerRoot = Path.Combine(Path.GetDirectoryName(Application.dataPath) ?? string.Empty, svgRootFolder);
         }
+
+        public IReadOnlyList<string> AvailableVariants => Variants;
 
         public IconManifest LoadManifest()
         {
             var manifestPath = Path.Combine(_tablerRoot, "manifest.json");
-            if (!File.Exists(manifestPath))
-                return null;
-
-            return JsonUtility.FromJson<IconManifest>(File.ReadAllText(manifestPath));
+            return !File.Exists(manifestPath)
+                ? null
+                : JsonUtility.FromJson<IconManifest>(File.ReadAllText(manifestPath));
         }
 
         public string GetSvgPath(string iconName, string variant)
@@ -32,16 +30,16 @@ namespace KnightForge.IconImporter.Editor
             return Path.Combine(_tablerRoot, variant, $"{iconName}.svg");
         }
 
-        public static TablerIconProviderSO EnsureProviderSO()
+        public static IconImporter.TablerIconProvider EnsureProvider()
         {
             const string assetPath = "Assets/Resources/IconProviders/Tabler.asset";
 
-            var existing = AssetDatabase.LoadAssetAtPath<TablerIconProviderSO>(assetPath);
-            if (existing != null)
+            var existing = AssetDatabase.LoadAssetAtPath<IconImporter.TablerIconProvider>(assetPath);
+            if (existing)
                 return existing;
 
-            var oldSo = AssetDatabase.LoadAssetAtPath<IconProviderSO>(assetPath);
-            if (oldSo != null)
+            var oldSo = AssetDatabase.LoadAssetAtPath<IconProvider>(assetPath);
+            if (oldSo)
                 AssetDatabase.DeleteAsset(assetPath);
 
             if (!AssetDatabase.IsValidFolder("Assets/Resources"))
@@ -49,8 +47,7 @@ namespace KnightForge.IconImporter.Editor
             if (!AssetDatabase.IsValidFolder("Assets/Resources/IconProviders"))
                 AssetDatabase.CreateFolder("Assets/Resources", "IconProviders");
 
-            var so = ScriptableObject.CreateInstance<TablerIconProviderSO>();
-            so.providerName = "Tabler";
+            var so = ScriptableObject.CreateInstance<IconImporter.TablerIconProvider>();
             so.svgRootFolder = "~TablerIcons";
             so.version = "latest";
             AssetDatabase.CreateAsset(so, assetPath);

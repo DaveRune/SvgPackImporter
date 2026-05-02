@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using UnityEngine;
 
-namespace KnightForge.IconImporter.Editor
+namespace KnightForge.IconImporter.Editor.Providers.Tabler
 {
     public static class TablerManifestBuilder
     {
@@ -42,7 +42,6 @@ namespace KnightForge.IconImporter.Editor
                 var aliasData = JsonUtility.FromJson<AliasData>("{\"data\":" + json + "}");
 
                 if (aliasData?.data != null)
-                {
                     foreach (var entry in aliasData.data)
                     {
                         if (!aliasMap.ContainsKey(entry.name))
@@ -51,7 +50,6 @@ namespace KnightForge.IconImporter.Editor
                         if (entry.aliases != null)
                             aliasMap[entry.name].AddRange(entry.aliases);
                     }
-                }
             }
             catch (Exception ex)
             {
@@ -98,13 +96,13 @@ namespace KnightForge.IconImporter.Editor
             }
         }
 
-        [System.Serializable]
+        [Serializable]
         private class AliasData
         {
             public AliasEntry[] data;
         }
 
-        [System.Serializable]
+        [Serializable]
         private class AliasEntry
         {
             public string name;

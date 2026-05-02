@@ -1,21 +1,17 @@
 using System.Collections;
-using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using KnightForge.IconImporter.Editor.Providers.Tabler;
+using KnightForge.IconImporter.Editor.Utilities;
 using UnityEditor;
 using UnityEngine;
 
-namespace KnightForge.IconImporter.Editor
+namespace KnightForge.IconImporter.Editor.Windows
 {
-    public class IconPackManagerWindow : EditorWindow
+    public sealed class IconPackManagerWindow : EditorWindow
     {
+        private bool _isImporting;
         private Vector2 _scrollPosition;
-        private bool _isImporting = false;
-
-        public static void ShowWindow()
-        {
-            GetWindow<IconPackManagerWindow>("Icon Pack Manager");
-        }
 
         private void OnGUI()
         {
@@ -27,14 +23,10 @@ namespace KnightForge.IconImporter.Editor
 
             var packs = FindAllIconPacks();
             if (packs.Length == 0)
-            {
                 GUILayout.Label("(No packs created yet)", EditorStyles.helpBox);
-            }
             else
-            {
                 foreach (var pack in packs)
                     EditorGUILayout.LabelField($"• {pack.name} ({pack.icons.Count} icons)", EditorStyles.label);
-            }
 
             GUILayout.EndScrollView();
 
@@ -49,16 +41,18 @@ namespace KnightForge.IconImporter.Editor
             if (GUILayout.Button("Import Provider", GUILayout.Height(30)))
                 OnImportProvider();
 
-            if (GUILayout.Button("Settings", GUILayout.Height(30)))
-                OnSettings();
-
             EditorGUI.EndDisabledGroup();
 
             if (_isImporting)
                 EditorGUILayout.HelpBox("Importing... Please wait.", MessageType.Info);
         }
 
-        private void OnCreateNewPack()
+        public static void ShowWindow()
+        {
+            GetWindow<IconPackManagerWindow>("Icon Pack Manager");
+        }
+
+        private static void OnCreateNewPack()
         {
             var path = EditorUtility.SaveFilePanel("Create Icon Pack", "Assets/IconPacks", "NewIconPack", "asset");
             if (string.IsNullOrEmpty(path))
@@ -66,8 +60,8 @@ namespace KnightForge.IconImporter.Editor
 
             path = Path.Combine("Assets", Path.GetRelativePath(Application.dataPath, path));
 
-            var pack = ScriptableObject.CreateInstance<IconPack>();
-            pack.provider = TablerIconProvider.EnsureProviderSO();
+            var pack = CreateInstance<IconPack>();
+            pack.provider = Providers.Tabler.TablerIconProvider.EnsureProvider();
 
             AssetDatabase.CreateAsset(pack, path);
             AssetDatabase.SaveAssets();
@@ -78,7 +72,7 @@ namespace KnightForge.IconImporter.Editor
 
         private void OnImportProvider()
         {
-            var provider = TablerIconProvider.EnsureProviderSO();
+            var provider = Providers.Tabler.TablerIconProvider.EnsureProvider();
             var version = provider ? provider.version : "latest";
             _isImporting = true;
             EditorCoroutineUtility.StartCoroutine(ImportTablerIconsWorkflow(version), this);
@@ -89,10 +83,7 @@ namespace KnightForge.IconImporter.Editor
             var projectPath = Path.GetDirectoryName(Application.dataPath);
             var tablerPath = Path.Combine(projectPath, "~TablerIcons");
 
-            yield return IconPackImporter.ImportTablerIcons(version, progress =>
-            {
-                EditorUtility.DisplayProgressBar("Icon Importer", progress, 0.5f);
-            });
+            yield return IconPackImporter.ImportTablerIcons(version, progress => { EditorUtility.DisplayProgressBar("Icon Importer", progress, 0.5f); });
 
             EditorUtility.DisplayProgressBar("Icon Importer", "Building manifest...", 0.75f);
             var manifest = TablerManifestBuilder.BuildManifest(tablerPath, version);
@@ -106,12 +97,7 @@ namespace KnightForge.IconImporter.Editor
                 EditorUtility.DisplayDialog("Error", "Failed to import icons.", "OK");
         }
 
-        private void OnSettings()
-        {
-            EditorUtility.DisplayDialog("Settings", "ImageMagick Detection - Coming Soon", "OK");
-        }
-
-        private IconPack[] FindAllIconPacks()
+        private static IconPack[] FindAllIconPacks()
         {
             var guids = AssetDatabase.FindAssets("t:IconPackSO");
 
@@ -119,57 +105,6 @@ namespace KnightForge.IconImporter.Editor
                 .Select(AssetDatabase.LoadAssetAtPath<IconPack>)
                 .Where(pack => pack)
                 .ToArray();
-        }
-    }
-
-    public static class EditorCoroutineUtility
-    {
-        public static EditorCoroutine StartCoroutine(IEnumerator routine, object owner)
-        {
-            return new EditorCoroutine(routine, owner);
-        }
-    }
-
-    public class EditorCoroutine
-    {
-        private Stack<IEnumerator> _stack;
-
-        public EditorCoroutine(IEnumerator routine, object owner)
-        {
-            _stack = new Stack<IEnumerator>();
-            _stack.Push(routine);
-            EditorApplication.update += Update;
-        }
-
-        public void Stop()
-        {
-            EditorApplication.update -= Update;
-            _stack.Clear();
-        }
-
-        private void Update()
-        {
-            if (_stack.Count == 0)
-            {
-                EditorApplication.update -= Update;
-                return;
-            }
-
-            var top = _stack.Peek();
-
-            if (top.Current is UnityEngine.AsyncOperation asyncOp && !asyncOp.isDone)
-                return;
-
-            if (!top.MoveNext())
-            {
-                _stack.Pop();
-                if (_stack.Count == 0)
-                    EditorApplication.update -= Update;
-                return;
-            }
-
-            if (top.Current is IEnumerator nested)
-                _stack.Push(nested);
         }
     }
 }

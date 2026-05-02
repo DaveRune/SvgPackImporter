@@ -8,7 +8,7 @@ using UnityEditor;
 using UnityEngine;
 using Debug = UnityEngine.Debug;
 
-namespace KnightForge.IconImporter.Editor
+namespace KnightForge.IconImporter.Editor.Utilities
 {
     public static class ImageMagickConverter
     {
@@ -16,22 +16,20 @@ namespace KnightForge.IconImporter.Editor
         {
             executablePath = "";
 
-            #if UNITY_EDITOR_WIN
+#if UNITY_EDITOR_WIN
             var fixedCandidates = new[]
             {
                 @"C:\Program Files\ImageMagick\magick.exe",
                 @"C:\Program Files\ImageMagick\convert.exe",
                 @"C:\Program Files (x86)\ImageMagick\magick.exe",
-                @"C:\Program Files (x86)\ImageMagick\convert.exe",
+                @"C:\Program Files (x86)\ImageMagick\convert.exe"
             };
 
             foreach (var candidate in fixedCandidates)
             {
-                if (File.Exists(candidate))
-                {
-                    executablePath = candidate;
-                    return true;
-                }
+                if (!File.Exists(candidate)) continue;
+                executablePath = candidate;
+                return true;
             }
 
             var searchRoots = new[] { @"C:\Program Files", @"C:\Program Files (x86)" };
@@ -41,21 +39,17 @@ namespace KnightForge.IconImporter.Editor
                     continue;
 
                 foreach (var dir in Directory.GetDirectories(root, "ImageMagick*"))
+                foreach (var exe in new[] { "magick.exe", "convert.exe" })
                 {
-                    foreach (var exe in new[] { "magick.exe", "convert.exe" })
-                    {
-                        var path = Path.Combine(dir, exe);
-                        if (File.Exists(path))
-                        {
-                            executablePath = path;
-                            return true;
-                        }
-                    }
+                    var path = Path.Combine(dir, exe);
+                    if (!File.Exists(path)) continue;
+                    executablePath = path;
+                    return true;
                 }
             }
 
             return false;
-            #elif UNITY_EDITOR_OSX
+#elif UNITY_EDITOR_OSX
             var candidates = new[]
             {
                 "/usr/local/bin/magick",
@@ -80,7 +74,7 @@ namespace KnightForge.IconImporter.Editor
             }
 
             return false;
-            #else
+#else
             if (File.Exists("/usr/bin/magick")) { executablePath = "/usr/bin/magick"; return true; }
             if (File.Exists("/usr/bin/convert")) { executablePath = "/usr/bin/convert"; return true; }
 
@@ -91,7 +85,7 @@ namespace KnightForge.IconImporter.Editor
             }
 
             return false;
-            #endif
+#endif
         }
 
         public static bool TryGeneratePreview(string svgPath, string outputPngPath, int size)
@@ -206,12 +200,12 @@ namespace KnightForge.IconImporter.Editor
                 using var process = Process.Start(processInfo);
                 process.WaitForExit();
 
-                if (process.ExitCode != 0)
-                {
-                    var error = process.StandardError.ReadToEnd();
-                    if (!string.IsNullOrEmpty(error))
-                        Debug.LogError($"ImageMagick: {error}");
-                }
+                if (process.ExitCode == 0)
+                    return process.ExitCode == 0;
+
+                var error = process.StandardError.ReadToEnd();
+                if (!string.IsNullOrEmpty(error))
+                    Debug.LogError($"ImageMagick: {error}");
 
                 return process.ExitCode == 0;
             }

@@ -1,16 +1,16 @@
+using KnightForge.IconImporter.Editor.Utilities;
 using UnityEditor;
 using UnityEngine;
 
-namespace KnightForge.IconImporter.Editor
+namespace KnightForge.IconImporter.Editor.Data
 {
-    public class IconImporterSettings : ScriptableObject
+    public sealed class IconImporterSettings : ScriptableObject
     {
-        public string imageMagickPath = "";
-        public bool imageMagickDetected = false;
-        public bool hasCompletedSetup = false;
-
         private const string SettingsAssetPath = "Assets/Resources/IconImporterSettings.asset";
         private static IconImporterSettings _instance;
+        public string imageMagickPath = "";
+        public bool imageMagickDetected;
+        public bool hasCompletedSetup;
 
         public static IconImporterSettings Instance
         {
@@ -30,6 +30,7 @@ namespace KnightForge.IconImporter.Editor
                         AssetDatabase.SaveAssets();
                     }
                 }
+
                 return _instance;
             }
         }

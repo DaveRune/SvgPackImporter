@@ -1,8 +1,9 @@
+using System;
 using System.Collections.Generic;
 
 namespace KnightForge.IconImporter
 {
-    [System.Serializable]
+    [Serializable]
     public class IconManifest
     {
         public string providerName;

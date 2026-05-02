@@ -1,10 +1,9 @@
 using System.Collections.Generic;
 
-namespace KnightForge.IconImporter.Editor
+namespace KnightForge.IconImporter.Editor.Providers
 {
     public interface IIconProvider
     {
-        string ProviderName { get; }
         IReadOnlyList<string> AvailableVariants { get; }
         IconManifest LoadManifest();
         string GetSvgPath(string iconName, string variant);

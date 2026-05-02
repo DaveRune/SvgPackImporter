@@ -1,3 +1,4 @@
+using KnightForge.IconImporter.Editor.Windows;
 using UnityEditor;
 
 namespace KnightForge.IconImporter.Editor
@@ -9,8 +10,8 @@ namespace KnightForge.IconImporter.Editor
         {
             FirstTimeSetupWindow.ShowSetupWindow();
         }
-        
-        [MenuItem(IconImporterConstants.MenuRoot + "/Manage Icon Packs", priority = 1000 )]
+
+        [MenuItem(IconImporterConstants.MenuRoot + "/Manage Icon Packs", priority = 1000)]
         public static void OpenIconPackManager()
         {
             IconPackManagerWindow.ShowWindow();
