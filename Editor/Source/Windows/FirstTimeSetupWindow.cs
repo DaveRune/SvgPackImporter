@@ -1,4 +1,3 @@
-using System;
 using System.IO;
 using KnightForge.IconImporter.Editor.Data;
 using KnightForge.IconImporter.Editor.Utilities;
@@ -9,12 +8,14 @@ namespace KnightForge.IconImporter.Editor.Windows
 {
     public sealed class FirstTimeSetupWindow : EditorWindow
     {
-        private static readonly string[] StepTitles = { "Welcome", "ImageMagick", "Done" };
+        private static readonly string[] StepTitles = { "Welcome", "ImageMagick", "Providers", "Done" };
+
         private int _currentStep;
         private string _detectedPath = "";
         private string _manualPath = "";
         private bool _pathVerified;
         private bool _searchPerformed;
+        private bool _tablerCreated;
 
         private void OnGUI()
         {
@@ -26,15 +27,16 @@ namespace KnightForge.IconImporter.Editor.Windows
             {
                 case 0: DrawWelcomeStep(); break;
                 case 1: DrawImageMagickStep(); break;
-                case 2: DrawCompleteStep(); break;
+                case 2: DrawProvidersStep(); break;
+                case 3: DrawCompleteStep(); break;
             }
         }
 
         public static void ShowSetupWindow()
         {
             var window = GetWindow<FirstTimeSetupWindow>(true, "Icon Importer Setup", true);
-            window.minSize = new Vector2(500, 360);
-            window.maxSize = new Vector2(500, 360);
+            window.minSize = new Vector2(500, 400);
+            window.maxSize = new Vector2(500, 400);
             window.ShowUtility();
         }
 
@@ -48,7 +50,7 @@ namespace KnightForge.IconImporter.Editor.Windows
             };
 
             GUILayout.Space(10);
-            GUILayout.Label("Icon Importer  —  First Time Setup", style);
+            GUILayout.Label("Icon Importer  -  First Time Setup", style);
             GUILayout.Space(6);
         }
 
@@ -148,7 +150,7 @@ namespace KnightForge.IconImporter.Editor.Windows
                 else
                 {
                     var err = new GUIStyle(EditorStyles.label) { normal = { textColor = new Color(0.9f, 0.3f, 0.3f) } };
-                    GUILayout.Label("✗  Not found — install it, then search again", err);
+                    GUILayout.Label("✗  Not found - install it, then search again", err);
                 }
             }
 
@@ -191,6 +193,47 @@ namespace KnightForge.IconImporter.Editor.Windows
                 });
         }
 
+        private void DrawProvidersStep()
+        {
+            var body = new GUIStyle(EditorStyles.wordWrappedLabel);
+
+            GUILayout.Space(10);
+            GUILayout.Label("Built-in Icon Providers", EditorStyles.boldLabel);
+            GUILayout.Label(
+                "Add built-in providers to your project. Each creates a provider asset you configure " +
+                "and use to download icons.",
+                body);
+
+            GUILayout.Space(10);
+            DrawSeparator();
+            GUILayout.Space(6);
+
+            // Tabler row
+            EditorGUILayout.BeginHorizontal();
+            GUILayout.Label("Tabler Icons", EditorStyles.boldLabel, GUILayout.Width(140));
+            GUILayout.Label("5,500+ SVG icons - outline & filled variants", EditorStyles.miniLabel);
+            GUILayout.FlexibleSpace();
+
+            if (_tablerCreated)
+            {
+                var ok = new GUIStyle(EditorStyles.miniLabel) { normal = { textColor = new Color(0.3f, 0.8f, 0.3f) } };
+                GUILayout.Label("✓ Added", ok, GUILayout.Width(60));
+            }
+            else if (GUILayout.Button("Add to Project", GUILayout.Width(100), GUILayout.Height(22)))
+            {
+                OnAddTablerProvider();
+            }
+
+            EditorGUILayout.EndHorizontal();
+
+            GUILayout.Space(6);
+            EditorGUILayout.HelpBox("After adding a provider, select it in the Project window and click 'Download and Setup'.", MessageType.Info);
+
+            GUILayout.FlexibleSpace();
+            DrawSeparator();
+            DrawFooterButtons(true, () => _currentStep = 1, "Next  ›", true, () => _currentStep = 3);
+        }
+
         private void DrawCompleteStep()
         {
             var settings = IconImporterSettings.Instance;
@@ -207,15 +250,46 @@ namespace KnightForge.IconImporter.Editor.Windows
             }
             else
             {
-                GUILayout.Label("ImageMagick not configured. You can set the path later via Tools > Icon Importer > Settings.", body);
+                GUILayout.Label("ImageMagick not configured. Set the path later via Tools > Icon Importer > Setup.", body);
             }
 
             GUILayout.Space(10);
-            GUILayout.Label("Open the Icon Pack Manager to get started:\nTools  >  Icon Importer  >  Manage Icon Packs", body);
+            GUILayout.Label(
+                "To get started:\n" +
+                "• Select a provider asset and click 'Download and Setup'\n" +
+                "• Right-click in the Project window and choose Create > IconImporter > Icon Packs > Icon Pack\n" +
+                "• Assign your provider to the pack and click 'Manage Icons'",
+                body);
 
             GUILayout.FlexibleSpace();
             DrawSeparator();
-            DrawFooterButtons(true, () => _currentStep = 1, "Finish", true, Close);
+            DrawFooterButtons(true, () => _currentStep = 2, "Finish", true, Close);
+        }
+
+        private void OnAddTablerProvider()
+        {
+            const string assetPath = "Assets/Resources/IconProviders/Tabler.asset";
+
+            var existing = AssetDatabase.LoadAssetAtPath<TablerIconProvider>(assetPath);
+            if (existing)
+            {
+                EditorGUIUtility.PingObject(existing);
+                _tablerCreated = true;
+                return;
+            }
+
+            if (!AssetDatabase.IsValidFolder("Assets/Resources"))
+                AssetDatabase.CreateFolder("Assets", "Resources");
+            if (!AssetDatabase.IsValidFolder("Assets/Resources/IconProviders"))
+                AssetDatabase.CreateFolder("Assets/Resources", "IconProviders");
+
+            var so = ScriptableObject.CreateInstance<TablerIconProvider>();
+            so.SetDefaults();
+            AssetDatabase.CreateAsset(so, assetPath);
+            AssetDatabase.SaveAssets();
+
+            EditorGUIUtility.PingObject(so);
+            _tablerCreated = true;
         }
 
         private void SaveSettings()
@@ -242,8 +316,8 @@ namespace KnightForge.IconImporter.Editor.Windows
         }
 
         private static void DrawFooterButtons(
-            bool showBack, Action onBack = null,
-            string nextLabel = "Next", bool nextEnabled = true, Action onNext = null)
+            bool showBack, System.Action onBack = null,
+            string nextLabel = "Next", bool nextEnabled = true, System.Action onNext = null)
         {
             GUILayout.BeginHorizontal();
 

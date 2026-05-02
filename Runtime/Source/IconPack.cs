@@ -4,11 +4,11 @@ using UnityEngine;
 
 namespace KnightForge.IconImporter
 {
-    [CreateAssetMenu(menuName = "Icon Packs/Create Icon Pack")]
+    [CreateAssetMenu(menuName = "IconImporter/Icon Packs/Icon Pack")]
     public sealed class IconPack : ScriptableObject
     {
         public List<PackedIcon> icons = new();
-        public IconProvider provider;
+        public List<IconProvider> providers = new();
 
         public float strokeWidth = 2f;
         public Color iconColor = Color.white;
@@ -21,6 +21,7 @@ namespace KnightForge.IconImporter
         {
             public string iconName;
             public string variant;
+            public IconProvider provider;
             public Texture2D texture;
             public Sprite sprite;
         }

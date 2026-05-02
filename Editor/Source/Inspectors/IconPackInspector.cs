@@ -1,4 +1,4 @@
-using KnightForge.IconImporter.Editor.Providers;
+using System.Linq;
 using KnightForge.IconImporter.Editor.Utilities;
 using KnightForge.IconImporter.Editor.Windows;
 using UnityEditor;
@@ -21,15 +21,13 @@ namespace KnightForge.IconImporter.Editor.Inspectors
         private SerializedProperty _iconColor;
         private SerializedProperty _icons;
         private SerializedProperty _iconSize;
-
-        private SerializedProperty _provider;
+        private SerializedProperty _providers;
         private SerializedProperty _strokeWidth;
-
         private double _updateCompleteTime = -1;
 
         private void OnEnable()
         {
-            _provider = serializedObject.FindProperty("provider");
+            _providers = serializedObject.FindProperty("providers");
             _iconSize = serializedObject.FindProperty("iconSize");
             _strokeWidth = serializedObject.FindProperty("strokeWidth");
             _iconColor = serializedObject.FindProperty("iconColor");
@@ -46,8 +44,8 @@ namespace KnightForge.IconImporter.Editor.Inspectors
             EditorGUILayout.LabelField("Icon Pack Configuration", EditorStyles.boldLabel);
 
             EditorGUILayout.Space(10);
-            EditorGUILayout.LabelField("Provider", EditorStyles.boldLabel);
-            EditorGUILayout.PropertyField(_provider, new GUIContent("Icon Provider"));
+            EditorGUILayout.LabelField("Providers", EditorStyles.boldLabel);
+            DrawProvidersList();
 
             EditorGUILayout.Space(10);
             EditorGUILayout.LabelField("Conversion Settings", EditorStyles.boldLabel);
@@ -59,17 +57,16 @@ namespace KnightForge.IconImporter.Editor.Inspectors
             EditorGUILayout.LabelField("Icons", EditorStyles.boldLabel);
             EditorGUILayout.LabelField($"Imported: {_icons.arraySize}");
 
-            var hasProvider = _provider.objectReferenceValue != null;
+            var hasProvider = pack.providers.Any(p => p != null);
             EditorGUI.BeginDisabledGroup(!hasProvider);
 
             if (GUILayout.Button("Manage Icons", GUILayout.Height(30)))
-                IconImportWindow.ShowWindow(pack);
+                IconManagerWindow.ShowWindow(pack);
 
             GUI.backgroundColor = UpdateColor;
             if (GUILayout.Button("Update", GUILayout.Height(30)))
             {
-                var provider = IconProviderFactory.Create(pack.provider);
-                IconImportProcessor.StartUpdate(pack, provider, this, () =>
+                IconImportProcessor.StartUpdate(pack, this, () =>
                 {
                     _updateCompleteTime = EditorApplication.timeSinceStartup;
                     Repaint();
@@ -103,6 +100,35 @@ namespace KnightForge.IconImporter.Editor.Inspectors
             HandleDragEvents();
         }
 
+        private void DrawProvidersList()
+        {
+            var toRemove = -1;
+
+            for (var i = 0; i < _providers.arraySize; i++)
+            {
+                EditorGUILayout.BeginHorizontal();
+                EditorGUILayout.PropertyField(_providers.GetArrayElementAtIndex(i), GUIContent.none);
+                if (GUILayout.Button("✕", GUILayout.Width(22), GUILayout.Height(EditorGUIUtility.singleLineHeight)))
+                    toRemove = i;
+                EditorGUILayout.EndHorizontal();
+            }
+
+            if (toRemove >= 0)
+            {
+                // Unity sets object references to null before removing — handle both steps.
+                var element = _providers.GetArrayElementAtIndex(toRemove);
+                if (element.objectReferenceValue != null)
+                    element.objectReferenceValue = null;
+                _providers.DeleteArrayElementAtIndex(toRemove);
+            }
+
+            if (GUILayout.Button("Add Provider", GUILayout.Height(22)))
+            {
+                _providers.InsertArrayElementAtIndex(_providers.arraySize);
+                _providers.GetArrayElementAtIndex(_providers.arraySize - 1).objectReferenceValue = null;
+            }
+        }
+
         private void DrawIconGrid(IconPack pack)
         {
             var totalCellSize = IconCellSize + IconCellSpacing;
@@ -117,7 +143,8 @@ namespace KnightForge.IconImporter.Editor.Inspectors
                 // Allocate a stable control ID per cell so Unity routes MouseDrag/MouseUp
                 // back to this window even after the mouse leaves the inspector panel.
                 var id = GUIUtility.GetControlID(FocusType.Passive);
-                var tooltip = $"{icon.iconName} ({icon.variant})";
+                var variantDisplay = string.IsNullOrEmpty(icon.variant) ? "Root" : icon.variant;
+                var tooltip = $"{icon.iconName} ({variantDisplay}) [{icon.provider?.name}]";
                 var cellRect = GUILayoutUtility.GetRect(IconCellSize, IconCellSize, _iconCellStyle,
                     GUILayout.Width(IconCellSize), GUILayout.Height(IconCellSize));
 
@@ -186,9 +213,7 @@ namespace KnightForge.IconImporter.Editor.Inspectors
 
         private void EnsureStyles()
         {
-            if (_iconCellStyle != null)
-                return;
-
+            if (_iconCellStyle != null) return;
             _iconCellStyle = new GUIStyle(GUI.skin.button)
             {
                 margin = new RectOffset(2, 2, 2, 2),

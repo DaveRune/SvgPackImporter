@@ -5,7 +5,6 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using KnightForge.IconImporter.Editor.Data;
-using KnightForge.IconImporter.Editor.Providers;
 using UnityEditor;
 using UnityEngine;
 using Debug = UnityEngine.Debug;
@@ -15,7 +14,7 @@ namespace KnightForge.IconImporter.Editor.Utilities
 {
     public static class IconImportProcessor
     {
-        public static void StartUpdate(IconPack pack, IIconProvider provider, object coroutineOwner, Action onComplete = null)
+        public static void StartUpdate(IconPack pack, object coroutineOwner, Action onComplete = null)
         {
             var settings = IconImporterSettings.Instance;
             if (!settings.imageMagickDetected)
@@ -32,13 +31,17 @@ namespace KnightForge.IconImporter.Editor.Utilities
             }
 
             var outputFolder = Path.Combine(Application.temporaryCachePath, $"{pack.name}_icons");
-            var toImport = pack.icons.Select(icon => new ImportedIcon { iconName = icon.iconName, variant = icon.variant }).ToList();
+
+            var toImport = pack.icons
+                .Where(icon => icon.provider != null)
+                .Select(icon => new ImportedIcon { iconName = icon.iconName, variant = icon.variant, provider = icon.provider })
+                .ToList();
 
             EditorUtility.DisplayProgressBar("Updating Icons", "Starting conversion...", 0);
 
             var convertRoutine = ImageMagickConverter.ConvertSvgsToPngs(
                 toImport,
-                (iconName, variant) => provider.GetSvgPath(iconName, variant),
+                icon => icon.provider.GetSvgPath(icon.iconName, icon.variant),
                 pack.iconSize,
                 pack.strokeWidth,
                 pack.iconColor,
@@ -65,12 +68,12 @@ namespace KnightForge.IconImporter.Editor.Utilities
             var assetPath = AssetDatabase.GetAssetPath(targetPack);
             if (string.IsNullOrEmpty(assetPath))
             {
-                Debug.LogError($"IconPackSO '{targetPack.name}' has no asset path. Save the asset first.");
+                Debug.LogError($"IconPack '{targetPack.name}' has no asset path. Save the asset first.");
                 yield break;
             }
 
             // Cache existing subassets by name so we can update them in-place and preserve Unity local
-            // file IDs — this keeps references from UI Image components intact across re-imports.
+            // file IDs - this keeps references from UI Image components intact across re-imports.
             var existingTextures = new Dictionary<string, Texture2D>();
             var existingSprites = new Dictionary<string, Sprite>();
 
@@ -85,8 +88,10 @@ namespace KnightForge.IconImporter.Editor.Utilities
 
             foreach (var selected in selectedIcons)
             {
-                // PNG name matches the output produced by ImageMagickConverter
-                var assetName = $"{selected.iconName}-{selected.variant}";
+                var providerName = selected.provider != null ? selected.provider.name : "Unknown";
+                var assetName = string.IsNullOrEmpty(selected.variant)
+                    ? $"{providerName}-{selected.iconName}"
+                    : $"{providerName}-{selected.iconName}-{selected.variant}";
                 var pngPath = Path.Combine(outputFolder, $"{assetName}.png");
 
                 if (!File.Exists(pngPath))
@@ -157,6 +162,7 @@ namespace KnightForge.IconImporter.Editor.Utilities
                 {
                     iconName = selected.iconName,
                     variant = selected.variant,
+                    provider = selected.provider,
                     texture = texture,
                     sprite = sprite
                 });

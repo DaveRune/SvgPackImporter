@@ -10,18 +10,12 @@ namespace KnightForge.IconImporter.Editor
         static IconImporterStartup()
         {
             EditorApplication.delayCall += CheckFirstTimeSetup;
-            EditorApplication.delayCall += EnsureProviders;
         }
 
         private static void CheckFirstTimeSetup()
         {
             if (!IconImporterSettings.Instance.hasCompletedSetup)
                 FirstTimeSetupWindow.ShowSetupWindow();
-        }
-
-        private static void EnsureProviders()
-        {
-            Providers.Tabler.TablerIconProvider.EnsureProvider();
         }
     }
 }

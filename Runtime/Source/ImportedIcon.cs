@@ -7,5 +7,6 @@ namespace KnightForge.IconImporter
     {
         public string iconName;
         public string variant;
+        public IconProvider provider;
     }
 }

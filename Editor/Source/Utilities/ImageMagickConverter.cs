@@ -108,11 +108,11 @@ namespace KnightForge.IconImporter.Editor.Utilities
             }
         }
 
-        // resolveSvgPath maps (iconName, variant) to the source SVG file path.
-        // Output PNG names are "{iconName}-{variant}.png" to keep outline/filled distinct.
+        // resolveSvgPath maps an ImportedIcon to its source SVG file path.
+        // Output PNG names are "{providerName}-{iconName}-{variant}.png".
         public static IEnumerator ConvertSvgsToPngs(
             List<ImportedIcon> selectedIcons,
-            Func<string, string, string> resolveSvgPath,
+            Func<ImportedIcon, string> resolveSvgPath,
             int size, float strokeWidth, Color color,
             string outputFolder, Action<string> progressCallback)
         {
@@ -133,8 +133,11 @@ namespace KnightForge.IconImporter.Editor.Utilities
             for (var i = 0; i < selectedIcons.Count; i++)
             {
                 var icon = selectedIcons[i];
-                var svgPath = resolveSvgPath(icon.iconName, icon.variant);
-                var pngName = $"{icon.iconName}-{icon.variant}.png";
+                var svgPath = resolveSvgPath(icon);
+                var providerName = icon.provider != null ? icon.provider.name : "Unknown";
+                var pngName = string.IsNullOrEmpty(icon.variant)
+                    ? $"{providerName}-{icon.iconName}.png"
+                    : $"{providerName}-{icon.iconName}-{icon.variant}.png";
                 var pngPath = Path.Combine(outputFolder, pngName);
 
                 progressCallback?.Invoke($"Converting {icon.iconName} ({icon.variant})... ({i + 1}/{selectedIcons.Count})");
