@@ -45,12 +45,15 @@ namespace KnightForge.IconImporter.Editor.Windows
         private readonly Dictionary<string, Texture2D> _previewCache = new();
         private readonly ConcurrentQueue<string> _readyToLoad = new();
         private HashSet<string> _activeVariants = new();
-        private List<string> _allVariants = new();
         private int _browsePage;
         private Vector2 _browseScroll;
-        private GUIStyle _centeredLabelStyle;
 
+        private GUIStyle _centeredLabelStyle;
         private GUIStyle _iconCellStyle;
+        private GUIStyle _pendingAddLabelStyle;
+        private GUIStyle _pendingRemoveLabelStyle;
+        private GUIStyle _updateCompleteLabelStyle;
+
         private int _includedPage;
         private Vector2 _includedScroll;
         private int _inFlightCount;
@@ -99,12 +102,13 @@ namespace KnightForge.IconImporter.Editor.Windows
                 return;
             }
 
-            if (!_manifestCache.Values.Any(m => m != null))
+            if (_manifestCache.Values.All(m => m == null))
             {
                 EditorGUILayout.HelpBox("No manifest found for any provider. Download or build a manifest first.", MessageType.Info);
                 return;
             }
 
+            EnsureStyles();
             DrawVariantBar();
             DrawSearchBar();
             DrawIncludedGrid();
@@ -125,29 +129,25 @@ namespace KnightForge.IconImporter.Editor.Windows
 
         private void InitialiseProviders()
         {
-            _providers = _targetPack?.Providers?.Where(p => p != null).ToList() ?? new List<IconProvider>();
+            _providers = _targetPack?.Providers?.Where(p => p).ToList() ?? new List<IconProvider>();
             _manifestCache.Clear();
 
             var variantSet = new HashSet<string>();
-            foreach (var p in _providers)
+            foreach (var provider in _providers)
             {
-                _manifestCache[ProviderKey(p)] = p.LoadManifest();
+                _manifestCache[ProviderKey(provider)] = provider.LoadManifest();
 
-                if (p.Variants.Count == 0)
+                if (provider.Variants.Count == 0)
                     variantSet.Add("");
                 else
-                    foreach (var v in p.Variants)
+                    foreach (var v in provider.Variants)
                         variantSet.Add(v);
             }
-
-            _allVariants = variantSet
-                .OrderBy(v => string.IsNullOrEmpty(v) ? NoVariantsName : v)
-                .ToList();
 
             if (_targetPack && _targetPack.ActiveVariants.Any())
                 _activeVariants = new HashSet<string>(_targetPack.ActiveVariants);
             else
-                _activeVariants = new HashSet<string>(_allVariants);
+                _activeVariants = new HashSet<string>(variantSet);
 
             _pendingAdditions.Clear();
             _pendingDeletions.Clear();
@@ -223,7 +223,6 @@ namespace KnightForge.IconImporter.Editor.Windows
 
         private void DrawIncludedGrid()
         {
-            EnsureStyles();
             EditorGUILayout.LabelField($"Included Icons ({_filteredIncluded.Count} shown)", EditorStyles.boldLabel);
 
             var pageCount = Mathf.Max(1, (_filteredIncluded.Count + IconsPerPage - 1) / IconsPerPage);
@@ -307,7 +306,6 @@ namespace KnightForge.IconImporter.Editor.Windows
 
         private void DrawBrowseGrid()
         {
-            EnsureStyles();
             EditorGUILayout.LabelField("Available Icons", EditorStyles.boldLabel);
 
             var pageCount = Mathf.Max(1, (_filteredBrowse.Count + IconsPerPage - 1) / IconsPerPage);
@@ -418,12 +416,10 @@ namespace KnightForge.IconImporter.Editor.Windows
                 GUILayout.FlexibleSpace();
 
                 if (addCount > 0)
-                    GUILayout.Label($"Add: {addCount} icon{(addCount == 1 ? "" : "s")}",
-                        new GUIStyle(GUI.skin.label) { normal = { textColor = PendingAddColor } });
+                    GUILayout.Label($"Add: {addCount} icon{(addCount == 1 ? "" : "s")}", _pendingAddLabelStyle);
 
                 if (removeCount > 0)
-                    GUILayout.Label($"Remove: {removeCount} icon{(removeCount == 1 ? "" : "s")}",
-                        new GUIStyle(GUI.skin.label) { normal = { textColor = DangerColor } });
+                    GUILayout.Label($"Remove: {removeCount} icon{(removeCount == 1 ? "" : "s")}", _pendingRemoveLabelStyle);
 
                 GUILayout.FlexibleSpace();
                 EditorGUILayout.EndHorizontal();
@@ -433,11 +429,7 @@ namespace KnightForge.IconImporter.Editor.Windows
             {
                 EditorGUILayout.BeginHorizontal();
                 GUILayout.FlexibleSpace();
-                GUILayout.Label("Update complete.", new GUIStyle(EditorStyles.label)
-                {
-                    normal = { textColor = UpdateColor },
-                    fontStyle = FontStyle.Bold
-                });
+                GUILayout.Label("Update complete.", _updateCompleteLabelStyle);
                 GUILayout.FlexibleSpace();
                 EditorGUILayout.EndHorizontal();
                 Repaint();
@@ -493,12 +485,12 @@ namespace KnightForge.IconImporter.Editor.Windows
 
         private void ApplyRangeToggleIncluded(int anchorIndex, int targetIndex)
         {
-            var lo = Mathf.Min(anchorIndex, targetIndex);
-            var hi = Mathf.Max(anchorIndex, targetIndex);
-            for (var r = lo; r <= hi; r++)
+            var low = Mathf.Min(anchorIndex, targetIndex);
+            var high = Mathf.Max(anchorIndex, targetIndex);
+            for (var range = low; range <= high; range++)
             {
-                if (r == anchorIndex) continue;
-                var rangeKey = EntryKey(_filteredIncluded[r]);
+                if (range == anchorIndex) continue;
+                var rangeKey = EntryKey(_filteredIncluded[range]);
                 if (!_pendingDeletions.Add(rangeKey))
                     _pendingDeletions.Remove(rangeKey);
             }
@@ -506,23 +498,23 @@ namespace KnightForge.IconImporter.Editor.Windows
 
         private void ApplyRangeToggleBrowse(int anchorIndex, int targetIndex, HashSet<string> importedKeys)
         {
-            var lo = Mathf.Min(anchorIndex, targetIndex);
-            var hi = Mathf.Max(anchorIndex, targetIndex);
-            for (var r = lo; r <= hi; r++)
+            var low = Mathf.Min(anchorIndex, targetIndex);
+            var high = Mathf.Max(anchorIndex, targetIndex);
+            for (var range = low; range <= high; range++)
             {
-                if (r == anchorIndex) continue;
-                var rangeEntry = _filteredBrowse[r];
+                if (range == anchorIndex) continue;
+                var rangeEntry = _filteredBrowse[range];
                 var rangeKey = EntryKey(rangeEntry);
 
                 if (importedKeys.Contains(rangeKey))
                 {
-                    if (_pendingDeletions.Contains(rangeKey)) _pendingDeletions.Remove(rangeKey);
-                    else _pendingDeletions.Add(rangeKey);
+                    if (!_pendingDeletions.Add(rangeKey))
+                        _pendingDeletions.Remove(rangeKey);
                 }
                 else
                 {
-                    if (_pendingAdditions.ContainsKey(rangeKey)) _pendingAdditions.Remove(rangeKey);
-                    else _pendingAdditions[rangeKey] = rangeEntry;
+                    if (!_pendingAdditions.Remove(rangeKey))
+                        _pendingAdditions[rangeKey] = rangeEntry;
                 }
             }
         }
@@ -577,7 +569,7 @@ namespace KnightForge.IconImporter.Editor.Windows
             return null;
         }
 
-        // Runs on main thread each frame, loading completed PNGs as Texture2D.
+        // Runs on the main thread each frame, loading completed PNGs as Texture2D.
         private IEnumerator DrainReadyQueue()
         {
             while (_inFlightCount > 0 || !_readyToLoad.IsEmpty)
@@ -738,6 +730,19 @@ namespace KnightForge.IconImporter.Editor.Windows
             _centeredLabelStyle = new GUIStyle(EditorStyles.miniLabel)
             {
                 alignment = TextAnchor.MiddleCenter
+            };
+            _pendingAddLabelStyle = new GUIStyle(GUI.skin.label)
+            {
+                normal = { textColor = PendingAddColor }
+            };
+            _pendingRemoveLabelStyle = new GUIStyle(GUI.skin.label)
+            {
+                normal = { textColor = DangerColor }
+            };
+            _updateCompleteLabelStyle = new GUIStyle(EditorStyles.label)
+            {
+                normal = { textColor = UpdateColor },
+                fontStyle = FontStyle.Bold
             };
         }
 
