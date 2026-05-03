@@ -9,11 +9,12 @@ namespace KnightForge.IconImporter.Editor.Inspectors
     public class IconProviderEditor : UnityEditor.Editor
     {
         protected IconManifest _manifest;
-        private bool _manifestLoaded;
 
         protected virtual void OnEnable()
         {
-            _manifestLoaded = false;
+            var provider = target as IconProvider;
+            if (provider != null)
+                _manifest = provider.LoadManifest();
         }
 
         public override void OnInspectorGUI()
@@ -22,14 +23,12 @@ namespace KnightForge.IconImporter.Editor.Inspectors
 
             var provider = (IconProvider)target;
 
-            if (!_manifestLoaded)
-                LoadManifestStatus(provider);
-
             DrawProviderHeader();
             DrawCoreFields();
             DrawManifestStatus();
             DrawManifestActions(provider);
             DrawAdditionalContent(provider);
+            DrawRemoveButton(provider);
 
             serializedObject.ApplyModifiedProperties();
 
@@ -62,14 +61,12 @@ namespace KnightForge.IconImporter.Editor.Inspectors
             if (GUILayout.Button(label, GUILayout.Height(28)))
             {
                 _manifest = provider.BuildManifest();
-                _manifestLoaded = true;
                 Repaint();
             }
         }
 
         protected void LoadManifestStatus(IconProvider provider)
         {
-            _manifestLoaded = true;
             _manifest = provider.LoadManifest();
         }
 
@@ -159,8 +156,43 @@ namespace KnightForge.IconImporter.Editor.Inspectors
             }
             else
             {
-                EditorGUILayout.LabelField("No manifest found. Add SVGs to the variant folders then build.", EditorStyles.helpBox);
+                EditorGUILayout.LabelField(GetNoFilesMessage(), EditorStyles.helpBox);
             }
         }
+
+        protected virtual string GetNoFilesMessage() => "No icons on disk.";
+
+        protected virtual void DrawRemoveButton(IconProvider provider)
+        {
+            EditorGUILayout.Space(16);
+
+            var prevColor = GUI.backgroundColor;
+            GUI.backgroundColor = new Color(0.75f, 0.15f, 0.15f);
+            var clicked = GUILayout.Button("Remove", GUILayout.Height(30));
+            GUI.backgroundColor = prevColor;
+
+            if (!clicked)
+                return;
+
+            var rootPath = provider.GetRootPath();
+            if (!EditorUtility.DisplayDialog(
+                    "Remove Icon Provider Data",
+                    GetRemoveConfirmMessage(rootPath),
+                    "Remove",
+                    "Cancel"))
+                return;
+
+            if (Directory.Exists(rootPath))
+                Directory.Delete(rootPath, true);
+
+            _manifest = null;
+            Repaint();
+        }
+
+        protected virtual string GetRemoveConfirmMessage(string rootPath) =>
+            $"This will permanently delete all SVG files and supporting data from:\n\n{rootPath}\n\n" +
+            "Any previously generated PNG textures will persist, but you will not be able to " +
+            "import or update icons from this source until the files are restored.\n\n" +
+            "This cannot be undone.";
     }
 }

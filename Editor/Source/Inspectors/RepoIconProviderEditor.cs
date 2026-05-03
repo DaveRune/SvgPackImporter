@@ -42,10 +42,8 @@ namespace KnightForge.IconImporter.Editor.Inspectors
             EditorGUILayout.PropertyField(serializedObject.FindProperty("_repoUrl"), new GUIContent("Repository URL"));
             var repoProvider = (RepoIconProvider)target;
             if (GUILayout.Button("Browse", GUILayout.Width(60), GUILayout.Height(EditorGUIUtility.singleLineHeight)))
-            {
                 if (!string.IsNullOrEmpty(repoProvider.RepoUrl))
                     Application.OpenURL(repoProvider.RepoUrl);
-            }
             EditorGUILayout.EndHorizontal();
 
             EditorGUILayout.Space(8);
@@ -58,7 +56,9 @@ namespace KnightForge.IconImporter.Editor.Inspectors
                     EditorGUILayout.LabelField($"  • {variant}");
         }
 
-        protected override void DrawManifestActions(IconProvider provider) { }
+        protected override void DrawManifestActions(IconProvider provider)
+        {
+        }
 
         protected override void DrawAdditionalContent(IconProvider provider)
         {
@@ -79,7 +79,7 @@ namespace KnightForge.IconImporter.Editor.Inspectors
                 EditorGUILayout.HelpBox(_progressMessage, MessageType.None);
 
             if (_manifest == null) return;
-            
+
             EditorGUILayout.Space(4);
             EditorGUI.BeginDisabledGroup(_isCheckingUpdate || _isDownloading);
             if (GUILayout.Button(_isCheckingUpdate ? "Checking..." : "Check for Updates", GUILayout.Height(26)))
@@ -89,6 +89,21 @@ namespace KnightForge.IconImporter.Editor.Inspectors
             if (!string.IsNullOrEmpty(_updateCheckResult))
                 EditorGUILayout.HelpBox(_updateCheckResult, MessageType.None);
         }
+
+        protected override void DrawRemoveButton(IconProvider provider)
+        {
+            EditorGUI.BeginDisabledGroup(_isDownloading || _isCheckingUpdate);
+            base.DrawRemoveButton(provider);
+            EditorGUI.EndDisabledGroup();
+        }
+
+        protected override string GetNoFilesMessage() => "Not downloaded yet.";
+
+        protected override string GetRemoveConfirmMessage(string rootPath) =>
+            $"This will permanently delete all downloaded SVG files and supporting data from:\n\n{rootPath}\n\n" +
+            "Any previously generated PNG textures will persist, but you will not be able to " +
+            "import or update icons from this source. You can re-download at any time using the " +
+            "Download and Setup button.\n\nThis cannot be undone.";
 
         private void OnDownloadClicked(RepoIconProvider provider)
         {
@@ -105,7 +120,11 @@ namespace KnightForge.IconImporter.Editor.Inspectors
 
             string downloadUrl = null;
             string releaseTag = null;
-            yield return FetchReleaseUrl(provider, (url, tag) => { downloadUrl = url; releaseTag = tag; });
+            yield return FetchReleaseUrl(provider, (url, tag) =>
+            {
+                downloadUrl = url;
+                releaseTag = tag;
+            });
 
             if (string.IsNullOrEmpty(downloadUrl))
             {
