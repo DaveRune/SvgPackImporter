@@ -1,9 +1,9 @@
-using KnightForge.IconImporter.Editor.Utilities;
 using UnityEditor;
 using UnityEngine;
 
 namespace KnightForge.IconImporter.Editor.Data
 {
+    [Icon("Packages/com.knightforge.iconimporter/Editor/Icons/IconImporterSettings.png")]
     public sealed class IconImporterSettings : ScriptableObject
     {
         private const string SettingsAssetPath = "Assets/Resources/IconImporterSettings.asset";
@@ -16,40 +16,19 @@ namespace KnightForge.IconImporter.Editor.Data
         {
             get
             {
-                if (_instance == null)
-                {
-                    _instance = AssetDatabase.LoadAssetAtPath<IconImporterSettings>(SettingsAssetPath);
+                if (_instance) return _instance;
+                _instance = AssetDatabase.LoadAssetAtPath<IconImporterSettings>(SettingsAssetPath);
 
-                    if (_instance == null)
-                    {
-                        if (!AssetDatabase.IsValidFolder("Assets/Resources"))
-                            AssetDatabase.CreateFolder("Assets", "Resources");
+                if (_instance) return _instance;
+                if (!AssetDatabase.IsValidFolder("Assets/Resources"))
+                    AssetDatabase.CreateFolder("Assets", "Resources");
 
-                        _instance = CreateInstance<IconImporterSettings>();
-                        AssetDatabase.CreateAsset(_instance, SettingsAssetPath);
-                        AssetDatabase.SaveAssets();
-                    }
-                }
+                _instance = CreateInstance<IconImporterSettings>();
+                AssetDatabase.CreateAsset(_instance, SettingsAssetPath);
+                AssetDatabase.SaveAssets();
 
                 return _instance;
             }
-        }
-
-        public void DetectImageMagick()
-        {
-            if (ImageMagickConverter.TryDetectImageMagick(out var path))
-            {
-                imageMagickPath = path;
-                imageMagickDetected = true;
-            }
-            else
-            {
-                imageMagickPath = "";
-                imageMagickDetected = false;
-            }
-
-            EditorUtility.SetDirty(this);
-            AssetDatabase.SaveAssets();
         }
     }
 }
