@@ -3,7 +3,7 @@
 Summary
 
 ---
-### Install Package from Git URL: **https://github.com/DaveRune/PackageName.git**
+### Install Package from Git URL: **https://github.com/DaveRune/IconImporter.git**
 ---
 
 ## Usage
