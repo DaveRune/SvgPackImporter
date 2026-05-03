@@ -32,7 +32,7 @@ namespace KnightForge.IconImporter.Editor.Utilities
 
             var outputFolder = Path.Combine(Application.temporaryCachePath, $"{pack.name}_icons");
 
-            var toImport = pack.icons
+            var toImport = pack.Icons
                 .Where(icon => icon.provider)
                 .Select(icon => new ImportedIcon { iconName = icon.iconName, variant = icon.variant, provider = icon.provider })
                 .ToList();
@@ -42,9 +42,9 @@ namespace KnightForge.IconImporter.Editor.Utilities
             var convertRoutine = ImageMagickConverter.ConvertSvgsToPngs(
                 toImport,
                 icon => icon.provider.GetSvgPath(icon.iconName, icon.variant),
-                pack.iconSize,
-                pack.strokeWidth,
-                pack.iconColor,
+                pack.IconSize,
+                pack.StrokeWidth,
+                pack.IconColor,
                 outputFolder,
                 progress => EditorUtility.DisplayProgressBar("Updating Icons", progress, 0.5f));
 
@@ -89,7 +89,7 @@ namespace KnightForge.IconImporter.Editor.Utilities
                 }
 
             var keepAssets = new HashSet<Object> { targetPack };
-            targetPack.icons.Clear();
+            targetPack.Icons.Clear();
 
             var embedded = 0;
 
@@ -134,6 +134,7 @@ namespace KnightForge.IconImporter.Editor.Utilities
                     AssetDatabase.AddObjectToAsset(texture, targetPack);
                 }
 
+                texture.hideFlags = HideFlags.HideInHierarchy;
                 keepAssets.Add(texture);
 
                 // Reuse the sprite only if its rect still matches the texture dimensions.
@@ -163,9 +164,10 @@ namespace KnightForge.IconImporter.Editor.Utilities
                     AssetDatabase.AddObjectToAsset(sprite, targetPack);
                 }
 
+                sprite.hideFlags = HideFlags.HideInHierarchy;
                 keepAssets.Add(sprite);
 
-                targetPack.icons.Add(new IconPack.PackedIcon
+                targetPack.Icons.Add(new IconPack.PackedIcon
                 {
                     iconName = selected.iconName,
                     variant = selected.variant,

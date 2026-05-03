@@ -8,14 +8,22 @@ namespace KnightForge.IconImporter
     [CreateAssetMenu(menuName = IconImporterConstants.IconPack, order = -1)]
     public sealed class IconPack : ScriptableObject
     {
-        public List<PackedIcon> icons = new();
-        public List<IconProvider> providers = new();
+        [SerializeField] private List<PackedIcon> _icons = new();
+        [SerializeField] private List<IconProvider> _providers = new();
 
-        public float strokeWidth = 2f;
-        public Color iconColor = Color.white;
-        public int iconSize = 64;
+        [SerializeField] private float _strokeWidth = 2f;
+        [SerializeField] private Color _iconColor = Color.white;
+        [SerializeField] private int _iconSize = 64;
 
-        [HideInInspector] public List<string> activeVariants = new();
+        [HideInInspector][SerializeField] private List<string> _activeVariants = new();
+        [HideInInspector][SerializeField] private bool _dragAsSprite = true;
+
+        public List<PackedIcon> Icons => _icons;
+        public IReadOnlyList<IconProvider> Providers => _providers;
+        public float StrokeWidth => _strokeWidth;
+        public Color IconColor => _iconColor;
+        public int IconSize => _iconSize;
+        public List<string> ActiveVariants => _activeVariants;
 
         [Serializable]
         public class PackedIcon

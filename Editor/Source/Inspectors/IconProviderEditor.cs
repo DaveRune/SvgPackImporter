@@ -13,7 +13,7 @@ namespace KnightForge.IconImporter.Editor.Inspectors
         protected virtual void OnEnable()
         {
             var provider = target as IconProvider;
-            if (provider != null)
+            if (provider)
                 _manifest = provider.LoadManifest();
         }
 

@@ -121,7 +121,7 @@ namespace KnightForge.IconImporter.Editor.Windows
 
         private void InitialiseProviders()
         {
-            _providers = _targetPack?.providers?.Where(p => p != null).ToList() ?? new List<IconProvider>();
+            _providers = _targetPack?.Providers?.Where(p => p != null).ToList() ?? new List<IconProvider>();
             _manifestCache.Clear();
 
             var variantSet = new HashSet<string>();
@@ -140,8 +140,8 @@ namespace KnightForge.IconImporter.Editor.Windows
                 .OrderBy(v => string.IsNullOrEmpty(v) ? NoVariantsName : v)
                 .ToList();
 
-            if (_targetPack && _targetPack.activeVariants.Any())
-                _activeVariants = new HashSet<string>(_targetPack.activeVariants);
+            if (_targetPack && _targetPack.ActiveVariants.Any())
+                _activeVariants = new HashSet<string>(_targetPack.ActiveVariants);
             else
                 _activeVariants = new HashSet<string>(_allVariants);
 
@@ -186,7 +186,8 @@ namespace KnightForge.IconImporter.Editor.Windows
 
             if (changed)
             {
-                _targetPack.activeVariants = new List<string>(_activeVariants);
+                _targetPack.ActiveVariants.Clear();
+                _targetPack.ActiveVariants.AddRange(_activeVariants);
                 EditorUtility.SetDirty(_targetPack);
                 AssetDatabase.SaveAssets();
                 _browsePage = 0;
@@ -268,7 +269,7 @@ namespace KnightForge.IconImporter.Editor.Windows
                     _pendingDeletions.Clear();
 
             if (GUILayout.Button("Mark all for removal", GUILayout.Width(130)))
-                foreach (var icon in _targetPack.icons.Where(i => i.provider != null))
+                foreach (var icon in _targetPack.Icons.Where(i => i.provider != null))
                     _pendingDeletions.Add(EntryKey(icon));
 
             EditorGUILayout.EndHorizontal();
@@ -288,7 +289,7 @@ namespace KnightForge.IconImporter.Editor.Windows
             var startIdx = _browsePage * IconsPerPage;
             var endIdx = Mathf.Min(startIdx + IconsPerPage, _filteredBrowse.Count);
 
-            var importedKeys = new HashSet<string>(_targetPack.icons
+            var importedKeys = new HashSet<string>(_targetPack.Icons
                 .Where(i => i.provider != null)
                 .Select(EntryKey));
 
@@ -507,15 +508,15 @@ namespace KnightForge.IconImporter.Editor.Windows
             var iconsToRemove = new HashSet<string>(_pendingDeletions);
             if (!ConfirmIfWillRemoveIcons(iconsToRemove)) return;
 
-            _targetPack.icons.RemoveAll(i => i.provider != null && iconsToRemove.Contains(EntryKey(i)));
+            _targetPack.Icons.RemoveAll(i => i.provider != null && iconsToRemove.Contains(EntryKey(i)));
 
-            var currentKeys = new HashSet<string>(_targetPack.icons
+            var currentKeys = new HashSet<string>(_targetPack.Icons
                 .Where(i => i.provider != null)
                 .Select(EntryKey));
 
             foreach (var (key, entry) in _pendingAdditions)
                 if (!currentKeys.Contains(key))
-                    _targetPack.icons.Add(new IconPack.PackedIcon
+                    _targetPack.Icons.Add(new IconPack.PackedIcon
                     {
                         iconName = entry.Entry.name,
                         variant = entry.Entry.variant,
@@ -535,7 +536,7 @@ namespace KnightForge.IconImporter.Editor.Windows
 
         private bool ConfirmIfWillRemoveIcons(HashSet<string> deletionKeys)
         {
-            var removed = _targetPack.icons
+            var removed = _targetPack.Icons
                 .Where(i => i.provider != null && deletionKeys.Contains(EntryKey(i)))
                 .Select(i =>
                 {
@@ -568,7 +569,7 @@ namespace KnightForge.IconImporter.Editor.Windows
             if (!_targetPack) return;
 
             var hasSearch = !string.IsNullOrEmpty(_searchText);
-            var currentKeys = new HashSet<string>(_targetPack.icons
+            var currentKeys = new HashSet<string>(_targetPack.Icons
                 .Where(i => i.provider != null)
                 .Select(EntryKey));
 

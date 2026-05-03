@@ -15,23 +15,24 @@ namespace KnightForge.IconImporter.Editor.Inspectors
 
         private static readonly Color UpdateColor = new(0.25f, 0.65f, 0.25f);
         private static readonly Color DragHighlightColor = new(0.24f, 0.49f, 0.91f, 1f);
-        private int _dragControlId;
-        private Sprite _dragTarget;
+        private Object _dragTarget;
         private GUIStyle _iconCellStyle;
         private SerializedProperty _iconColor;
         private SerializedProperty _icons;
         private SerializedProperty _iconSize;
         private SerializedProperty _providers;
+        private SerializedProperty _dragAsSprite;
         private SerializedProperty _strokeWidth;
         private double _updateCompleteTime = -1;
 
         private void OnEnable()
         {
-            _providers = serializedObject.FindProperty("providers");
-            _iconSize = serializedObject.FindProperty("iconSize");
-            _strokeWidth = serializedObject.FindProperty("strokeWidth");
-            _iconColor = serializedObject.FindProperty("iconColor");
-            _icons = serializedObject.FindProperty("icons");
+            _dragAsSprite = serializedObject.FindProperty("_dragAsSprite");
+            _strokeWidth = serializedObject.FindProperty("_strokeWidth");
+            _providers = serializedObject.FindProperty("_providers");
+            _iconColor = serializedObject.FindProperty("_iconColor");
+            _iconSize = serializedObject.FindProperty("_iconSize");
+            _icons = serializedObject.FindProperty("_icons");
         }
 
         public override void OnInspectorGUI()
@@ -54,12 +55,9 @@ namespace KnightForge.IconImporter.Editor.Inspectors
             EditorGUILayout.PropertyField(_iconColor, new GUIContent("Icon Color"));
 
             EditorGUILayout.Space(10);
-            EditorGUILayout.LabelField("Icons", EditorStyles.boldLabel);
-            EditorGUILayout.LabelField($"Imported: {_icons.arraySize}");
 
-            var hasProvider = pack.providers.Any(p => p != null);
+            var hasProvider = pack.Providers.Any(provider => provider);
             EditorGUI.BeginDisabledGroup(!hasProvider);
-
             if (GUILayout.Button("Manage Icons", GUILayout.Height(30)))
                 IconManagerWindow.ShowWindow(pack);
 
@@ -72,9 +70,27 @@ namespace KnightForge.IconImporter.Editor.Inspectors
                 });
 
             GUI.backgroundColor = Color.white;
-
             EditorGUI.EndDisabledGroup();
 
+            EditorGUILayout.Space(10);
+            EditorGUILayout.BeginHorizontal();
+            EditorGUILayout.LabelField($"Icons ({_icons.arraySize})", EditorStyles.boldLabel, GUILayout.ExpandWidth(false));
+            GUILayout.FlexibleSpace();
+            if (pack.Icons.Count > 0)
+            {
+                EditorGUILayout.LabelField("Drag and drop as:", GUILayout.Width(105));
+                var dragMode = _dragAsSprite.boolValue ? 0 : 1;
+                dragMode = GUILayout.Toolbar(dragMode, new[] { "Sprite", "Texture2D" }, EditorStyles.miniButton, GUILayout.Width(150));
+                _dragAsSprite.boolValue = dragMode == 0;
+            }
+            EditorGUILayout.EndHorizontal();
+
+            if (!_dragAsSprite.boolValue)
+            {
+                EditorGUILayout.LabelField($"Be aware. Unity has a bug. Dragging a Texture2D into a Sprite field will assign the first found Sprite.", EditorStyles.helpBox);
+                EditorGUILayout.Space(10);
+            }
+            
             if (_updateCompleteTime > 0 && EditorApplication.timeSinceStartup - _updateCompleteTime < 5.0)
             {
                 var successStyle = new GUIStyle(EditorStyles.label)
@@ -87,9 +103,8 @@ namespace KnightForge.IconImporter.Editor.Inspectors
                 Repaint();
             }
 
-            if (pack.icons.Count > 0)
+            if (pack.Icons.Count > 0)
             {
-                EditorGUILayout.Space(10);
                 DrawIconGrid(pack);
             }
 
@@ -115,7 +130,7 @@ namespace KnightForge.IconImporter.Editor.Inspectors
             {
                 // Unity sets object references to null before removing — handle both steps.
                 var element = _providers.GetArrayElementAtIndex(toRemove);
-                if (element.objectReferenceValue != null)
+                if (element.objectReferenceValue)
                     element.objectReferenceValue = null;
                 _providers.DeleteArrayElementAtIndex(toRemove);
             }
@@ -136,7 +151,7 @@ namespace KnightForge.IconImporter.Editor.Inspectors
             var column = 0;
             EditorGUILayout.BeginHorizontal();
 
-            foreach (var icon in pack.icons)
+            foreach (var icon in pack.Icons)
             {
                 // Allocate a stable control ID per cell so Unity routes MouseDrag/MouseUp
                 // back to this window even after the mouse leaves the inspector panel.
@@ -156,14 +171,13 @@ namespace KnightForge.IconImporter.Editor.Inspectors
                         _iconCellStyle.Draw(cellRect, new GUIContent("", tooltip), isHover, isActive, false, false);
                         if (icon.texture)
                             GUI.DrawTexture(cellRect, icon.texture, ScaleMode.ScaleToFit, true);
-                        if (_dragTarget == icon.sprite)
+                        if (_dragTarget == icon.sprite || _dragTarget == icon.texture)
                             DrawBorder(cellRect, DragHighlightColor, BorderWidth);
                         break;
 
                     case EventType.MouseDown when evt.button == 0 && isHover:
                         GUIUtility.hotControl = id;
-                        _dragControlId = id;
-                        _dragTarget = icon.sprite;
+                        _dragTarget = _dragAsSprite.boolValue ? icon.sprite : icon.texture;
                         Repaint();
                         evt.Use();
                         break;
