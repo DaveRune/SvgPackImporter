@@ -6,22 +6,14 @@ namespace KnightForge.IconImporter.Editor.Windows
 {
     public sealed class IconGridWindow : EditorWindow
     {
-        private IconPack _pack;
-        private IconGridView _grid;
         private bool _dragAsSprite = true;
+        private IconGridView _grid;
+        private IconPack _pack;
         private Vector2 _scroll;
-
-        public static void Show(IconPack pack, bool dragAsSprite)
-        {
-            var window = GetWindow<IconGridWindow>($"Icons ({pack.name})");
-            window._pack = pack;
-            window._dragAsSprite = dragAsSprite;
-            window.minSize = new Vector2(200, 200);
-        }
 
         private void OnEnable()
         {
-            _grid = new IconGridView();
+            _grid = new IconGridView(true);
         }
 
         private void OnGUI()
@@ -35,7 +27,16 @@ namespace KnightForge.IconImporter.Editor.Windows
 
             _scroll = EditorGUILayout.BeginScrollView(_scroll);
             _grid.Draw(_pack, _dragAsSprite, val => _dragAsSprite = val, Repaint);
+            if (GUILayout.Button("Locate Icon Pack")) EditorGUIUtility.PingObject(_pack);
             EditorGUILayout.EndScrollView();
+        }
+
+        public static void Show(IconPack pack, bool dragAsSprite)
+        {
+            var window = GetWindow<IconGridWindow>($"Icons ({pack.name})");
+            window._pack = pack;
+            window._dragAsSprite = dragAsSprite;
+            window.minSize = new Vector2(200, 200);
         }
     }
 }

@@ -15,7 +15,6 @@ namespace KnightForge.IconImporter.Editor.Inspectors
         private readonly IconGridView _grid = new();
         private SerializedProperty _dragAsSprite;
         private SerializedProperty _iconColor;
-        private SerializedProperty _icons;
         private SerializedProperty _iconSize;
         private SerializedProperty _providers;
         private SerializedProperty _strokeWidth;
@@ -28,7 +27,6 @@ namespace KnightForge.IconImporter.Editor.Inspectors
             _providers = serializedObject.FindProperty("_providers");
             _iconColor = serializedObject.FindProperty("_iconColor");
             _iconSize = serializedObject.FindProperty("_iconSize");
-            _icons = serializedObject.FindProperty("_icons");
         }
 
         public override void OnInspectorGUI()
@@ -50,7 +48,7 @@ namespace KnightForge.IconImporter.Editor.Inspectors
             EditorGUILayout.PropertyField(_iconColor, new GUIContent("Icon Color"));
 
             EditorGUILayout.Space(10);
-            EditorGUILayout.LabelField($"Icons ({_icons.arraySize})", EditorStyles.boldLabel);
+            
 
             var hasProvider = pack.Providers.Any(p => p);
             EditorGUI.BeginDisabledGroup(!hasProvider);

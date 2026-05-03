@@ -7,25 +7,33 @@ namespace KnightForge.IconImporter.Editor.Inspectors
 {
     public sealed class IconGridView
     {
-        private const int IconCellSize = 64;
         private const int IconCellSpacing = 4;
+        private const int IconCellSize = 64;
         private const int BorderWidth = 2;
         private static readonly Color DragHighlightColor = new(0.24f, 0.49f, 0.91f, 1f);
-
         private Object _dragTarget;
+
         private GUIStyle _iconCellStyle;
+
+        public IconGridView(bool isPopOutWindow = false)
+        {
+            WidthOffset = isPopOutWindow ? 20 : 0;
+        }
+
+        private int WidthOffset { get; }
 
         public void Draw(IconPack pack, bool dragAsSprite, Action<bool> onDragModeChanged, Action repaint)
         {
             EnsureStyles();
-            DrawDragModeToolbar(dragAsSprite, onDragModeChanged);
+            DrawDragModeToolbar(pack.Icons.Count, dragAsSprite, onDragModeChanged);
             DrawGrid(pack, dragAsSprite, repaint);
             HandleDragEvents();
         }
 
-        private static void DrawDragModeToolbar(bool dragAsSprite, Action<bool> onDragModeChanged)
+        private static void DrawDragModeToolbar(int iconCount, bool dragAsSprite, Action<bool> onDragModeChanged)
         {
             EditorGUILayout.BeginHorizontal();
+            EditorGUILayout.LabelField($"Icons ({iconCount})", EditorStyles.boldLabel);
             GUILayout.FlexibleSpace();
             EditorGUILayout.LabelField("Drag as:", GUILayout.Width(55));
             var newMode = GUILayout.Toolbar(dragAsSprite ? 0 : 1, new[] { "Sprite", "Texture2D" },
@@ -44,7 +52,7 @@ namespace KnightForge.IconImporter.Editor.Inspectors
         private void DrawGrid(IconPack pack, bool dragAsSprite, Action repaint)
         {
             const int totalCellSize = IconCellSize + IconCellSpacing;
-            var availableWidth = EditorGUIUtility.currentViewWidth - 20f;
+            var availableWidth = EditorGUIUtility.currentViewWidth + WidthOffset;
             var columns = Mathf.Max(1, Mathf.FloorToInt(availableWidth / totalCellSize));
 
             var column = 0;
@@ -76,7 +84,7 @@ namespace KnightForge.IconImporter.Editor.Inspectors
 
                     case EventType.MouseDown when evt.button == 0 && isHover:
                         GUIUtility.hotControl = id;
-                        _dragTarget = dragAsSprite ? (Object)icon.sprite : icon.texture;
+                        _dragTarget = dragAsSprite ? icon.sprite : icon.texture;
                         repaint();
                         evt.Use();
                         break;
@@ -101,15 +109,15 @@ namespace KnightForge.IconImporter.Editor.Inspectors
 
         private void HandleDragEvents()
         {
-            if (Event.current.type == EventType.MouseDrag && _dragTarget != null)
-            {
-                DragAndDrop.PrepareStartDrag();
-                DragAndDrop.objectReferences = new[] { _dragTarget };
-                DragAndDrop.StartDrag(_dragTarget.name);
-                GUIUtility.hotControl = 0;
-                _dragTarget = null;
-                Event.current.Use();
-            }
+            if (Event.current.type != EventType.MouseDrag || !_dragTarget)
+                return;
+
+            DragAndDrop.PrepareStartDrag();
+            DragAndDrop.objectReferences = new[] { _dragTarget };
+            DragAndDrop.StartDrag(_dragTarget.name);
+            GUIUtility.hotControl = 0;
+            _dragTarget = null;
+            Event.current.Use();
         }
 
         private static void DrawBorder(Rect rect, Color color, int width)
