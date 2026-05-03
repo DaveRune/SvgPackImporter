@@ -60,6 +60,10 @@ namespace KnightForge.IconImporter.Editor.Windows
 
         private string _searchText = "";
 
+        // ── Shift-click anchor ────────────────────────────────────────────────
+        private ShiftClickGrid _shiftAnchorGrid = ShiftClickGrid.None;
+        private int _shiftAnchorIndex = -1;
+
         // ── State ─────────────────────────────────────────────────────────────
         private IconPack _targetPack;
         private double _updateCompleteTime = -1;
@@ -240,10 +244,23 @@ namespace KnightForge.IconImporter.Editor.Windows
                 var isPendingDeletion = _pendingDeletions.Contains(key);
                 var state = isPendingDeletion ? IconCellState.PendingDeletion : IconCellState.Imported;
 
-                if (DrawIconCell(entry, state))
+                var clickType = DrawIconCell(entry, state);
+                if (clickType != CellClickType.None)
                 {
-                    if (isPendingDeletion) _pendingDeletions.Remove(key);
-                    else _pendingDeletions.Add(key);
+                    if (clickType == CellClickType.Shift &&
+                        _shiftAnchorGrid == ShiftClickGrid.Included &&
+                        _shiftAnchorIndex >= 0)
+                    {
+                        ApplyRangeToggleIncluded(_shiftAnchorIndex, i);
+                    }
+                    else
+                    {
+                        if (isPendingDeletion) _pendingDeletions.Remove(key);
+                        else _pendingDeletions.Add(key);
+                        _shiftAnchorGrid = ShiftClickGrid.Included;
+                        _shiftAnchorIndex = i;
+                    }
+
                     GUI.changed = true;
                 }
 
@@ -260,8 +277,18 @@ namespace KnightForge.IconImporter.Editor.Windows
             EditorGUILayout.Space(4);
             EditorGUILayout.BeginHorizontal();
             EditorGUILayout.LabelField($"Page {_includedPage + 1} of {pageCount}", GUILayout.Width(100));
-            if (GUILayout.Button("< Prev", GUILayout.Width(70))) _includedPage = Mathf.Max(0, _includedPage - 1);
-            if (GUILayout.Button("Next >", GUILayout.Width(70))) _includedPage = Mathf.Min(pageCount - 1, _includedPage + 1);
+            if (GUILayout.Button("< Prev", GUILayout.Width(70)))
+            {
+                _includedPage = Mathf.Max(0, _includedPage - 1);
+                ClearShiftAnchor();
+            }
+
+            if (GUILayout.Button("Next >", GUILayout.Width(70)))
+            {
+                _includedPage = Mathf.Min(pageCount - 1, _includedPage + 1);
+                ClearShiftAnchor();
+            }
+
             GUILayout.FlexibleSpace();
 
             if (_pendingDeletions.Any())
@@ -311,17 +338,30 @@ namespace KnightForge.IconImporter.Editor.Windows
                 else
                     state = isPendingAddition ? IconCellState.PendingAdd : IconCellState.NotImported;
 
-                if (DrawIconCell(entry, state))
+                var clickType = DrawIconCell(entry, state);
+                if (clickType != CellClickType.None)
                 {
-                    if (isImported)
+                    if (clickType == CellClickType.Shift &&
+                        _shiftAnchorGrid == ShiftClickGrid.Browse &&
+                        _shiftAnchorIndex >= 0)
                     {
-                        if (isPendingDeletion) _pendingDeletions.Remove(key);
-                        else _pendingDeletions.Add(key);
+                        ApplyRangeToggleBrowse(_shiftAnchorIndex, i, importedKeys);
                     }
                     else
                     {
-                        if (isPendingAddition) _pendingAdditions.Remove(key);
-                        else _pendingAdditions[key] = entry;
+                        if (isImported)
+                        {
+                            if (isPendingDeletion) _pendingDeletions.Remove(key);
+                            else _pendingDeletions.Add(key);
+                        }
+                        else
+                        {
+                            if (isPendingAddition) _pendingAdditions.Remove(key);
+                            else _pendingAdditions[key] = entry;
+                        }
+
+                        _shiftAnchorGrid = ShiftClickGrid.Browse;
+                        _shiftAnchorIndex = i;
                     }
 
                     GUI.changed = true;
@@ -340,8 +380,18 @@ namespace KnightForge.IconImporter.Editor.Windows
             EditorGUILayout.Space(4);
             EditorGUILayout.BeginHorizontal();
             EditorGUILayout.LabelField($"Page {_browsePage + 1} of {pageCount}", GUILayout.Width(100));
-            if (GUILayout.Button("< Prev", GUILayout.Width(70))) _browsePage = Mathf.Max(0, _browsePage - 1);
-            if (GUILayout.Button("Next >", GUILayout.Width(70))) _browsePage = Mathf.Min(pageCount - 1, _browsePage + 1);
+            if (GUILayout.Button("< Prev", GUILayout.Width(70)))
+            {
+                _browsePage = Mathf.Max(0, _browsePage - 1);
+                ClearShiftAnchor();
+            }
+
+            if (GUILayout.Button("Next >", GUILayout.Width(70)))
+            {
+                _browsePage = Mathf.Min(pageCount - 1, _browsePage + 1);
+                ClearShiftAnchor();
+            }
+
             GUILayout.FlexibleSpace();
             EditorGUILayout.LabelField($"Browsing {_filteredBrowse.Count} icons", GUILayout.Width(140));
             EditorGUILayout.EndHorizontal();
@@ -396,19 +446,25 @@ namespace KnightForge.IconImporter.Editor.Windows
 
         // ── Icon cell ─────────────────────────────────────────────────────────
 
-        private bool DrawIconCell(ProviderIconEntry entry, IconCellState state)
+        private CellClickType DrawIconCell(ProviderIconEntry entry, IconCellState state)
         {
             var preview = GetPreview(entry);
-            var variantDisplay = string.IsNullOrEmpty(entry.Entry.variant) ? NoVariantsName : entry.Entry.variant;
-            var tooltip = $"{entry.Entry.name} ({variantDisplay}) [{entry.Provider.name}]";
+            var variantDisplay = string.IsNullOrEmpty(entry.entry.variant) ? NoVariantsName : entry.entry.variant;
+            var tooltip = $"{entry.entry.name} ({variantDisplay}) [{entry.provider.name}]";
 
             var cellRect = GUILayoutUtility.GetRect(IconPreviewSize, IconPreviewSize, _iconCellStyle,
                 GUILayout.Width(IconPreviewSize), GUILayout.Height(IconPreviewSize));
 
             var clicked = GUI.Button(cellRect, new GUIContent("", tooltip), _iconCellStyle);
 
+            // Capture shift state immediately after GUI.Button — Event.current.Use() sets type to Used
+            // but leaves modifiers intact, so Event.current.shift is still valid here.
+            var result = clicked
+                ? Event.current.shift ? CellClickType.Shift : CellClickType.Normal
+                : CellClickType.None;
+
             if (Event.current.type != EventType.Repaint)
-                return clicked;
+                return result;
 
             if (preview)
                 GUI.DrawTexture(cellRect, preview, ScaleMode.ScaleToFit, true);
@@ -422,7 +478,7 @@ namespace KnightForge.IconImporter.Editor.Windows
                 case IconCellState.PendingAdd: DrawBorder(cellRect, PendingAddColor, PreviewBorderWidth); break;
             }
 
-            return clicked;
+            return result;
         }
 
         private static void DrawBorder(Rect rect, Color color, int width)
@@ -431,6 +487,50 @@ namespace KnightForge.IconImporter.Editor.Windows
             EditorGUI.DrawRect(new Rect(rect.x, rect.yMax - width, rect.width, width), color);
             EditorGUI.DrawRect(new Rect(rect.x, rect.y, width, rect.height), color);
             EditorGUI.DrawRect(new Rect(rect.xMax - width, rect.y, width, rect.height), color);
+        }
+
+        // ── Shift-click range helpers ─────────────────────────────────────────
+
+        private void ApplyRangeToggleIncluded(int anchorIndex, int targetIndex)
+        {
+            var lo = Mathf.Min(anchorIndex, targetIndex);
+            var hi = Mathf.Max(anchorIndex, targetIndex);
+            for (var r = lo; r <= hi; r++)
+            {
+                if (r == anchorIndex) continue;
+                var rangeKey = EntryKey(_filteredIncluded[r]);
+                if (!_pendingDeletions.Add(rangeKey))
+                    _pendingDeletions.Remove(rangeKey);
+            }
+        }
+
+        private void ApplyRangeToggleBrowse(int anchorIndex, int targetIndex, HashSet<string> importedKeys)
+        {
+            var lo = Mathf.Min(anchorIndex, targetIndex);
+            var hi = Mathf.Max(anchorIndex, targetIndex);
+            for (var r = lo; r <= hi; r++)
+            {
+                if (r == anchorIndex) continue;
+                var rangeEntry = _filteredBrowse[r];
+                var rangeKey = EntryKey(rangeEntry);
+
+                if (importedKeys.Contains(rangeKey))
+                {
+                    if (_pendingDeletions.Contains(rangeKey)) _pendingDeletions.Remove(rangeKey);
+                    else _pendingDeletions.Add(rangeKey);
+                }
+                else
+                {
+                    if (_pendingAdditions.ContainsKey(rangeKey)) _pendingAdditions.Remove(rangeKey);
+                    else _pendingAdditions[rangeKey] = rangeEntry;
+                }
+            }
+        }
+
+        private void ClearShiftAnchor()
+        {
+            _shiftAnchorGrid = ShiftClickGrid.None;
+            _shiftAnchorIndex = -1;
         }
 
         // ── Preview ───────────────────────────────────────────────────────────
@@ -445,7 +545,7 @@ namespace KnightForge.IconImporter.Editor.Windows
             _previewTempFolder ??= Path.Combine(Application.temporaryCachePath, "IconPreviews");
             Directory.CreateDirectory(_previewTempFolder);
 
-            var svgPath = entry.Provider?.GetSvgPath(entry.Entry.name, entry.Entry.variant);
+            var svgPath = entry.provider?.GetSvgPath(entry.entry.name, entry.entry.variant);
             if (string.IsNullOrEmpty(svgPath) || !File.Exists(svgPath)) return null;
 
             var pngPath = Path.Combine(_previewTempFolder, $"{key}.png");
@@ -508,19 +608,19 @@ namespace KnightForge.IconImporter.Editor.Windows
             var iconsToRemove = new HashSet<string>(_pendingDeletions);
             if (!ConfirmIfWillRemoveIcons(iconsToRemove)) return;
 
-            _targetPack.Icons.RemoveAll(i => i.provider != null && iconsToRemove.Contains(EntryKey(i)));
+            _targetPack.Icons.RemoveAll(i => i.provider && iconsToRemove.Contains(EntryKey(i)));
 
             var currentKeys = new HashSet<string>(_targetPack.Icons
-                .Where(i => i.provider != null)
+                .Where(i => i.provider)
                 .Select(EntryKey));
 
             foreach (var (key, entry) in _pendingAdditions)
                 if (!currentKeys.Contains(key))
                     _targetPack.Icons.Add(new IconPack.PackedIcon
                     {
-                        iconName = entry.Entry.name,
-                        variant = entry.Entry.variant,
-                        provider = entry.Provider
+                        iconName = entry.entry.name,
+                        variant = entry.entry.variant,
+                        provider = entry.provider
                     });
 
             _pendingDeletions.Clear();
@@ -537,7 +637,7 @@ namespace KnightForge.IconImporter.Editor.Windows
         private bool ConfirmIfWillRemoveIcons(HashSet<string> deletionKeys)
         {
             var removed = _targetPack.Icons
-                .Where(i => i.provider != null && deletionKeys.Contains(EntryKey(i)))
+                .Where(i => i.provider && deletionKeys.Contains(EntryKey(i)))
                 .Select(i =>
                 {
                     var v = string.IsNullOrEmpty(i.variant) ? NoVariantsName : i.variant;
@@ -565,12 +665,13 @@ namespace KnightForge.IconImporter.Editor.Windows
         {
             _filteredIncluded.Clear();
             _filteredBrowse.Clear();
+            ClearShiftAnchor();
 
             if (!_targetPack) return;
 
             var hasSearch = !string.IsNullOrEmpty(_searchText);
             var currentKeys = new HashSet<string>(_targetPack.Icons
-                .Where(i => i.provider != null)
+                .Where(i => i.provider)
                 .Select(EntryKey));
 
             foreach (var provider in _providers)
@@ -611,7 +712,7 @@ namespace KnightForge.IconImporter.Editor.Windows
 
         private static string EntryKey(ProviderIconEntry entry)
         {
-            return $"{ProviderKey(entry.Provider)}/{entry.Entry.variant}/{entry.Entry.name}";
+            return $"{ProviderKey(entry.provider)}/{entry.entry.variant}/{entry.entry.name}";
         }
 
         private static string EntryKey(IconPack.PackedIcon icon)
@@ -621,7 +722,7 @@ namespace KnightForge.IconImporter.Editor.Windows
 
         private static string PreviewKey(ProviderIconEntry entry)
         {
-            return $"{ProviderKey(entry.Provider)}-{entry.Entry.name}-{entry.Entry.variant}";
+            return $"{ProviderKey(entry.provider)}-{entry.entry.name}-{entry.entry.variant}";
         }
 
         // ── Helpers ───────────────────────────────────────────────────────────
@@ -643,13 +744,13 @@ namespace KnightForge.IconImporter.Editor.Windows
         // ── Icon entry type ───────────────────────────────────────────────────
         private readonly struct ProviderIconEntry
         {
-            public readonly IconEntry Entry;
-            public readonly IconProvider Provider;
+            public readonly IconEntry entry;
+            public readonly IconProvider provider;
 
             public ProviderIconEntry(IconEntry entry, IconProvider provider)
             {
-                Entry = entry;
-                Provider = provider;
+                this.entry = entry;
+                this.provider = provider;
             }
         }
 
@@ -659,6 +760,20 @@ namespace KnightForge.IconImporter.Editor.Windows
             PendingAdd,
             Imported,
             PendingDeletion
+        }
+
+        private enum CellClickType
+        {
+            None,
+            Normal,
+            Shift
+        }
+
+        private enum ShiftClickGrid
+        {
+            None,
+            Included,
+            Browse
         }
     }
 }
