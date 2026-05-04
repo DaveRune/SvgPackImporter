@@ -32,8 +32,15 @@ namespace KnightForge.IconImporter.Editor.Utilities
 
             var outputFolder = Path.Combine(Application.temporaryCachePath, $"{pack.name}_icons");
 
+            // Only convert icons whose source SVG is still on disk.
+            // Icons with missing sources are preserved through EmbedIconsAsSubassets unchanged.
             var toImport = pack.Icons
                 .Where(icon => icon.provider)
+                .Where(icon =>
+                {
+                    var svgPath = icon.provider.GetSvgPath(icon.iconName, icon.variant);
+                    return !string.IsNullOrEmpty(svgPath) && File.Exists(svgPath);
+                })
                 .Select(icon => new ImportedIcon { iconName = icon.iconName, variant = icon.variant, provider = icon.provider })
                 .ToList();
 
@@ -88,6 +95,18 @@ namespace KnightForge.IconImporter.Editor.Utilities
                         break;
                 }
 
+            // Snapshot current pack entries before clearing, so we can re-add any icons
+            // whose source SVG was missing and were excluded from selectedIcons.
+            var originalPackedIcons = targetPack.Icons.ToList();
+
+            var selectedAssetNames = new HashSet<string>(selectedIcons.Select(i =>
+            {
+                var pName = i.provider != null ? i.provider.name : "Unknown";
+                return string.IsNullOrEmpty(i.variant)
+                    ? $"{pName}-{i.iconName}"
+                    : $"{pName}-{i.iconName}-{i.variant}";
+            }));
+
             var keepAssets = new HashSet<Object> { targetPack };
             targetPack.Icons.Clear();
 
@@ -137,8 +156,6 @@ namespace KnightForge.IconImporter.Editor.Utilities
                 texture.hideFlags = HideFlags.HideInHierarchy;
                 keepAssets.Add(texture);
 
-                // Reuse the sprite only if its rect still matches the texture dimensions.
-                // If iconSize changed between imports, the rect is stale and must be recreated.
                 existingSprites.TryGetValue(assetName, out var existingSprite);
                 var rectMatches = existingSprite
                                   && (int)existingSprite.rect.width == texture.width
@@ -151,17 +168,24 @@ namespace KnightForge.IconImporter.Editor.Utilities
                 }
                 else
                 {
-                    if (existingSprite)
-                        AssetDatabase.RemoveObjectFromAsset(existingSprite);
+                    var newRect = new Rect(0, 0, texture.width, texture.height);
+                    var newSprite = Sprite.Create(texture, newRect, new Vector2(0.5f, 0.5f), 100f);
+                    newSprite.name = assetName;
 
-                    sprite = Sprite.Create(
-                        texture,
-                        new Rect(0, 0, texture.width, texture.height),
-                        new Vector2(0.5f, 0.5f),
-                        100f
-                    );
-                    sprite.name = assetName;
-                    AssetDatabase.AddObjectToAsset(sprite, targetPack);
+                    if (existingSprite)
+                    {
+                        // Copy the new sprite's data into the existing sprite object to update its
+                        // rect while preserving its local file ID. This keeps Image component
+                        // references valid when iconSize changes between updates.
+                        EditorUtility.CopySerialized(newSprite, existingSprite);
+                        Object.DestroyImmediate(newSprite);
+                        sprite = existingSprite;
+                    }
+                    else
+                    {
+                        sprite = newSprite;
+                        AssetDatabase.AddObjectToAsset(sprite, targetPack);
+                    }
                 }
 
                 sprite.hideFlags = HideFlags.HideInHierarchy;
@@ -179,9 +203,28 @@ namespace KnightForge.IconImporter.Editor.Utilities
                 embedded++;
             }
 
+            // Re-add icons that were excluded from selectedIcons because their source SVG was
+            // missing. Preserve their existing subassets so references remain intact.
+            foreach (var original in originalPackedIcons)
+            {
+                if (!original.provider) continue;
+                var provName = original.provider.name;
+                var aName = string.IsNullOrEmpty(original.variant)
+                    ? $"{provName}-{original.iconName}"
+                    : $"{provName}-{original.iconName}-{original.variant}";
+                if (selectedAssetNames.Contains(aName)) continue;
+
+                if (original.texture) keepAssets.Add(original.texture);
+                if (original.sprite) keepAssets.Add(original.sprite);
+                targetPack.Icons.Add(original);
+            }
+
             foreach (var asset in AssetDatabase.LoadAllAssetsAtPath(assetPath))
-                if (!keepAssets.Contains(asset))
-                    AssetDatabase.RemoveObjectFromAsset(asset);
+            {
+                if (keepAssets.Contains(asset)) continue;
+                AssetDatabase.RemoveObjectFromAsset(asset);
+                Object.DestroyImmediate(asset, true);
+            }
 
             if (Directory.Exists(outputFolder))
                 Directory.Delete(outputFolder, true);

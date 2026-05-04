@@ -5,6 +5,7 @@ using UnityEngine;
 
 namespace KnightForge.IconImporter.Providers.BuiltIn
 {
+    [Icon("Packages/com.knightforge.iconimporter/Editor/Icons/IconProvider.png")]
     [CreateAssetMenu(menuName = IconImporterConstants.IconProviders + "Tabler", order = IconImporterConstants.IconProvidersBuiltIn)]
     public sealed class TablerIconProvider : RepoIconProvider
     {

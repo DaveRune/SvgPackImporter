@@ -29,6 +29,9 @@ namespace KnightForge.IconImporter.Editor.Windows
         private static readonly Color PendingAddColor = new(0.2f, 0.45f, 0.75f);
         private static readonly Color VariantOnColor = new(0.3f, 0.75f, 0.3f);
         private static readonly Color VariantOffColor = new(0.45f, 0.45f, 0.45f);
+        private static readonly Color MissingBgColor = new(0.55f, 0.1f, 0.1f, 0.45f);
+        private static readonly Color TooltipBgColor = new(0.1f, 0.1f, 0.1f, 0.93f);
+        private static readonly Color MissingTooltipTextColor = new(0.95f, 0.25f, 0.25f, 1f);
 
         // ── Preview throttle ──────────────────────────────────────────────────
         private static readonly SemaphoreSlim GenerationThrottle = new(
@@ -44,6 +47,14 @@ namespace KnightForge.IconImporter.Editor.Windows
 
         private readonly Dictionary<string, Texture2D> _previewCache = new();
         private readonly ConcurrentQueue<string> _readyToLoad = new();
+
+        // Pack icons whose source SVG is missing from disk (State 1: still in manifest; State 2: removed from manifest).
+        private readonly HashSet<string> _missingSvgKeys = new();
+        // Embedded textures used as preview fallback when the source SVG is gone.
+        private readonly Dictionary<string, Texture2D> _embeddedTextureFallback = new();
+        // Providers that have pack icons still in the manifest but with missing source SVGs (State 1).
+        private List<IconProvider> _staleManifestProviders = new();
+
         private HashSet<string> _activeVariants = new();
         private int _browsePage;
         private Vector2 _browseScroll;
@@ -53,6 +64,8 @@ namespace KnightForge.IconImporter.Editor.Windows
         private GUIStyle _pendingAddLabelStyle;
         private GUIStyle _pendingRemoveLabelStyle;
         private GUIStyle _updateCompleteLabelStyle;
+        private GUIStyle _tooltipLabelStyle;
+        private GUIStyle _missingTooltipLabelStyle;
 
         private int _includedPage;
         private Vector2 _includedScroll;
@@ -70,6 +83,10 @@ namespace KnightForge.IconImporter.Editor.Windows
         // ── State ─────────────────────────────────────────────────────────────
         private IconPack _targetPack;
         private double _updateCompleteTime = -1;
+
+        // ── Hover tooltip ─────────────────────────────────────────────────────
+        private string _hoveredTooltip;
+        private bool _hoveredIsMissing;
 
         // ── Lifecycle ─────────────────────────────────────────────────────────
 
@@ -90,6 +107,9 @@ namespace KnightForge.IconImporter.Editor.Windows
 
         private void OnGUI()
         {
+            _hoveredTooltip = null;
+            _hoveredIsMissing = false;
+
             if (!_targetPack)
             {
                 EditorGUILayout.HelpBox("No icon pack loaded. Close and reopen from the pack inspector.", MessageType.Warning);
@@ -111,9 +131,11 @@ namespace KnightForge.IconImporter.Editor.Windows
             EnsureStyles();
             DrawVariantBar();
             DrawSearchBar();
+            DrawMissingSourceWarning();
             DrawIncludedGrid();
             DrawBrowseGrid();
             DrawControls();
+            DrawHoverTooltip();
         }
 
         public static void ShowWindow(IconPack pack)
@@ -193,7 +215,6 @@ namespace KnightForge.IconImporter.Editor.Windows
                 _targetPack.ActiveVariants.Clear();
                 _targetPack.ActiveVariants.AddRange(_activeVariants);
                 EditorUtility.SetDirty(_targetPack);
-                AssetDatabase.SaveAssets();
                 _browsePage = 0;
                 RefreshFiltered();
             }
@@ -219,6 +240,23 @@ namespace KnightForge.IconImporter.Editor.Windows
             EditorGUILayout.Space(8);
         }
 
+        // ── Missing source warning ─────────────────────────────────────────────
+
+        private void DrawMissingSourceWarning()
+        {
+            if (_staleManifestProviders.Count == 0) return;
+
+            EditorGUILayout.BeginHorizontal();
+            foreach (var provider in _staleManifestProviders.Where(provider => GUILayout.Button($"Rebuild: {provider.name}", GUILayout.Height(22))))
+            {
+                provider.BuildManifest();
+                InitialiseProviders();
+                GUIUtility.ExitGUI();
+            }
+            EditorGUILayout.EndHorizontal();
+            EditorGUILayout.Space(4);
+        }
+
         // ── Included grid ─────────────────────────────────────────────────────
 
         private void DrawIncludedGrid()
@@ -241,7 +279,11 @@ namespace KnightForge.IconImporter.Editor.Windows
                 var entry = _filteredIncluded[i];
                 var key = EntryKey(entry);
                 var isPendingDeletion = _pendingDeletions.Contains(key);
-                var state = isPendingDeletion ? IconCellState.PendingDeletion : IconCellState.Imported;
+
+                IconCellState state;
+                if (isPendingDeletion) state = IconCellState.PendingDeletion;
+                else if (_missingSvgKeys.Contains(key)) state = IconCellState.MissingFromManifest;
+                else state = IconCellState.Imported;
 
                 var clickType = DrawIconCell(entry, state);
                 if (clickType != CellClickType.None)
@@ -441,13 +483,20 @@ namespace KnightForge.IconImporter.Editor.Windows
         private CellClickType DrawIconCell(ProviderIconEntry entry, IconCellState state)
         {
             var preview = GetPreview(entry);
+
+            // Fall back to the embedded texture for any icon whose source SVG is missing,
+            // regardless of pending-deletion state, so the icon always shows its graphic.
+            if (preview == null)
+                _embeddedTextureFallback.TryGetValue(EntryKey(entry), out preview);
+
             var variantDisplay = string.IsNullOrEmpty(entry.entry.variant) ? NoVariantsName : entry.entry.variant;
             var tooltip = $"{entry.entry.name} ({variantDisplay}) [{entry.provider.name}]";
 
             var cellRect = GUILayoutUtility.GetRect(IconPreviewSize, IconPreviewSize, _iconCellStyle,
                 GUILayout.Width(IconPreviewSize), GUILayout.Height(IconPreviewSize));
 
-            var clicked = GUI.Button(cellRect, new GUIContent("", tooltip), _iconCellStyle);
+            // Empty GUIContent — Unity's built-in tooltip is suppressed in favour of DrawHoverTooltip.
+            var clicked = GUI.Button(cellRect, GUIContent.none, _iconCellStyle);
 
             // Capture shift state immediately after GUI.Button — Event.current.Use() sets type to Used
             // but leaves modifiers intact, so Event.current.shift is still valid here.
@@ -457,6 +506,9 @@ namespace KnightForge.IconImporter.Editor.Windows
 
             if (Event.current.type != EventType.Repaint)
                 return result;
+
+            if (state == IconCellState.MissingFromManifest || _missingSvgKeys.Contains(EntryKey(entry)))
+                EditorGUI.DrawRect(cellRect, MissingBgColor);
 
             if (preview)
                 GUI.DrawTexture(cellRect, preview, ScaleMode.ScaleToFit, true);
@@ -470,6 +522,13 @@ namespace KnightForge.IconImporter.Editor.Windows
                 case IconCellState.PendingAdd: DrawBorder(cellRect, PendingAddColor, PreviewBorderWidth); break;
             }
 
+            // Track hover for the custom tooltip drawn at the end of OnGUI (window-space coordinates).
+            if (cellRect.Contains(Event.current.mousePosition))
+            {
+                _hoveredTooltip = tooltip;
+                _hoveredIsMissing = _missingSvgKeys.Contains(EntryKey(entry));
+            }
+
             return result;
         }
 
@@ -479,6 +538,45 @@ namespace KnightForge.IconImporter.Editor.Windows
             EditorGUI.DrawRect(new Rect(rect.x, rect.yMax - width, rect.width, width), color);
             EditorGUI.DrawRect(new Rect(rect.x, rect.y, width, rect.height), color);
             EditorGUI.DrawRect(new Rect(rect.xMax - width, rect.y, width, rect.height), color);
+        }
+
+        // ── Hover tooltip ─────────────────────────────────────────────────────
+
+        private void DrawHoverTooltip()
+        {
+            if (string.IsNullOrEmpty(_hoveredTooltip)) return;
+            if (Event.current.type != EventType.Repaint) return;
+
+            EnsureStyles();
+
+            const float padding = 5f;
+            const float lineH = 15f;
+            const float gap = 2f;
+
+            var mainSize = _tooltipLabelStyle.CalcSize(new GUIContent(_hoveredTooltip));
+            var boxW = mainSize.x + padding * 2f;
+            var boxH = lineH + padding * 2f;
+
+            if (_hoveredIsMissing)
+            {
+                var missingSize = _missingTooltipLabelStyle.CalcSize(new GUIContent("Missing Source SVG"));
+                boxW = Mathf.Max(boxW, missingSize.x + padding * 2f);
+                boxH += gap + lineH;
+            }
+
+            var mouse = Event.current.mousePosition;
+            var x = Mathf.Min(mouse.x + 14f, position.width - boxW - 4f);
+            var y = Mathf.Min(mouse.y + 14f, position.height - boxH - 4f);
+
+            EditorGUI.DrawRect(new Rect(x, y, boxW, boxH), TooltipBgColor);
+            GUI.Label(new Rect(x + padding, y + padding, boxW - padding * 2f, lineH),
+                _hoveredTooltip, _tooltipLabelStyle);
+
+            if (_hoveredIsMissing)
+                GUI.Label(new Rect(x + padding, y + padding + lineH + gap, boxW - padding * 2f, lineH),
+                    "Missing Source SVG", _missingTooltipLabelStyle);
+
+            Repaint();
         }
 
         // ── Shift-click range helpers ─────────────────────────────────────────
@@ -657,6 +755,8 @@ namespace KnightForge.IconImporter.Editor.Windows
         {
             _filteredIncluded.Clear();
             _filteredBrowse.Clear();
+            _missingSvgKeys.Clear();
+            _embeddedTextureFallback.Clear();
             ClearShiftAnchor();
 
             if (!_targetPack) return;
@@ -665,6 +765,14 @@ namespace KnightForge.IconImporter.Editor.Windows
             var currentKeys = new HashSet<string>(_targetPack.Icons
                 .Where(i => i.provider)
                 .Select(EntryKey));
+
+            // Pre-build lookup so we can grab embedded textures without repeated LINQ scans.
+            var packIconByKey = _targetPack.Icons
+                .Where(i => i.provider != null)
+                .ToDictionary(EntryKey, i => i);
+
+            var matchedKeys = new HashSet<string>();
+            var staleProviders = new HashSet<IconProvider>();
 
             foreach (var provider in _providers)
             {
@@ -679,12 +787,46 @@ namespace KnightForge.IconImporter.Editor.Windows
                     var key = EntryKey(entry);
 
                     if (currentKeys.Contains(key))
+                    {
+                        matchedKeys.Add(key);
+
+                        // State 1: icon is in the pack and in the manifest, but SVG is gone from disk.
+                        var svgPath = provider.GetSvgPath(icon.name, icon.variant);
+                        if (string.IsNullOrEmpty(svgPath) || !File.Exists(svgPath))
+                        {
+                            _missingSvgKeys.Add(key);
+                            staleProviders.Add(provider);
+                            if (packIconByKey.TryGetValue(key, out var packed) && packed.texture != null)
+                                _embeddedTextureFallback[key] = packed.texture;
+                        }
+
                         if (!hasSearch || MatchesSearch(icon))
                             _filteredIncluded.Add(entry);
+                    }
 
                     if (hasSearch && !MatchesSearch(icon)) continue;
                     _filteredBrowse.Add(entry);
                 }
+            }
+
+            _staleManifestProviders = staleProviders.ToList();
+
+            // State 2: icon is in the pack but no longer in any manifest (manifest was rebuilt after SVG deletion).
+            // Skip variants that are currently inactive — they are simply hidden, not orphaned.
+            foreach (var packed in _targetPack.Icons)
+            {
+                if (!packed.provider) continue;
+                if (!_activeVariants.Contains(packed.variant)) continue;
+                var key = EntryKey(packed);
+                if (matchedKeys.Contains(key)) continue;
+
+                _missingSvgKeys.Add(key);
+                if (packed.texture != null)
+                    _embeddedTextureFallback[key] = packed.texture;
+
+                var synthetic = new IconEntry { name = packed.iconName, variant = packed.variant };
+                if (hasSearch && !MatchesSearch(synthetic)) continue;
+                _filteredIncluded.Add(new ProviderIconEntry(synthetic, packed.provider));
             }
         }
 
@@ -744,6 +886,15 @@ namespace KnightForge.IconImporter.Editor.Windows
                 normal = { textColor = UpdateColor },
                 fontStyle = FontStyle.Bold
             };
+            _tooltipLabelStyle = new GUIStyle(EditorStyles.miniLabel)
+            {
+                normal = { textColor = Color.white }
+            };
+            _missingTooltipLabelStyle = new GUIStyle(EditorStyles.miniLabel)
+            {
+                normal = { textColor = MissingTooltipTextColor },
+                fontStyle = FontStyle.Bold
+            };
         }
 
         // ── Icon entry type ───────────────────────────────────────────────────
@@ -764,7 +915,8 @@ namespace KnightForge.IconImporter.Editor.Windows
             NotImported,
             PendingAdd,
             Imported,
-            PendingDeletion
+            PendingDeletion,
+            MissingFromManifest
         }
 
         private enum CellClickType

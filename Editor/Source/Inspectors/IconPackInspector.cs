@@ -1,3 +1,4 @@
+using System.IO;
 using System.Linq;
 using KnightForge.IconImporter.Editor.Utilities;
 using KnightForge.IconImporter.Editor.Windows;
@@ -10,6 +11,7 @@ namespace KnightForge.IconImporter.Editor.Inspectors
     public sealed class IconPackInspector : UnityEditor.Editor
     {
         private static readonly Color UpdateColor = new(0.25f, 0.65f, 0.25f);
+        private static readonly Color MissingSourceColor = new(0.85f, 0.2f, 0.2f, 1f);
         private const int ButtonHeight = 30;
 
         private readonly IconGridView _grid = new();
@@ -87,9 +89,30 @@ namespace KnightForge.IconImporter.Editor.Inspectors
                     _dragAsSprite.boolValue = val;
                     serializedObject.ApplyModifiedProperties();
                 }, Repaint);
+
                 if (GUILayout.Button("Pop-out Icons", GUILayout.Height(ButtonHeight)))
                 {
                     IconGridWindow.Show(pack, _dragAsSprite.boolValue);
+                }
+                
+                var hasMissingSvg = pack.Icons.Any(i =>
+                {
+                    var path = i.provider?.GetSvgPath(i.iconName, i.variant);
+                    return !string.IsNullOrEmpty(path) && !File.Exists(path);
+                });
+                if (hasMissingSvg)
+                {
+                    var missingStyle = new GUIStyle(EditorStyles.label)
+                    {
+                        normal = { textColor = MissingSourceColor },
+                        alignment = TextAnchor.MiddleCenter,
+                        wordWrap = true
+                    };
+                    EditorGUILayout.BeginHorizontal();
+                    GUILayout.FlexibleSpace();
+                    GUILayout.Label("Missing some source files.", missingStyle);
+                    GUILayout.FlexibleSpace();
+                    EditorGUILayout.EndHorizontal();
                 }
             }
 

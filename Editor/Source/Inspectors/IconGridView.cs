@@ -1,4 +1,5 @@
 using System;
+using System.IO;
 using UnityEditor;
 using UnityEngine;
 using Object = UnityEngine.Object;
@@ -11,6 +12,7 @@ namespace KnightForge.IconImporter.Editor.Inspectors
         private const int IconCellSize = 64;
         private const int BorderWidth = 2;
         private static readonly Color DragHighlightColor = new(0.24f, 0.49f, 0.91f, 1f);
+        private static readonly Color MissingBgColor = new(0.55f, 0.1f, 0.1f, 0.45f);
         private Object _dragTarget;
 
         private GUIStyle _iconCellStyle;
@@ -64,7 +66,14 @@ namespace KnightForge.IconImporter.Editor.Inspectors
                 // even after the mouse leaves the panel.
                 var id = GUIUtility.GetControlID(FocusType.Passive);
                 var variantDisplay = string.IsNullOrEmpty(icon.variant) ? "Root" : icon.variant;
-                var tooltip = $"{icon.iconName} ({variantDisplay}) [{icon.provider?.name}]";
+
+                var svgPath = icon.provider != null ? icon.provider.GetSvgPath(icon.iconName, icon.variant) : null;
+                var isMissingSvg = !string.IsNullOrEmpty(svgPath) && !File.Exists(svgPath);
+
+                var tooltip = isMissingSvg
+                    ? $"{icon.iconName} ({variantDisplay}) [{icon.provider?.name}]\n⚠ Missing Source SVG"
+                    : $"{icon.iconName} ({variantDisplay}) [{icon.provider?.name}]";
+
                 var cellRect = GUILayoutUtility.GetRect(IconCellSize, IconCellSize, _iconCellStyle,
                     GUILayout.Width(IconCellSize), GUILayout.Height(IconCellSize));
 
@@ -76,6 +85,8 @@ namespace KnightForge.IconImporter.Editor.Inspectors
                 {
                     case EventType.Repaint:
                         _iconCellStyle.Draw(cellRect, new GUIContent("", tooltip), isHover, isActive, false, false);
+                        if (isMissingSvg)
+                            EditorGUI.DrawRect(cellRect, MissingBgColor);
                         if (icon.texture)
                             GUI.DrawTexture(cellRect, icon.texture, ScaleMode.ScaleToFit, true);
                         if (_dragTarget == icon.sprite || _dragTarget == icon.texture)
