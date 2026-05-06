@@ -642,8 +642,8 @@ namespace KnightForge.IconImporter.Editor.Windows
             _previewTempFolder ??= Path.Combine(Application.temporaryCachePath, "IconPreviews");
             Directory.CreateDirectory(_previewTempFolder);
 
-            var svgPath = entry.provider ? entry.provider.GetSvgPath(entry.entry.name, entry.entry.variant) : null;
-            if (string.IsNullOrEmpty(svgPath) || !File.Exists(svgPath)) return null;
+            if (!entry.provider || !entry.provider.HasSourceFor(entry.entry.name, entry.entry.variant)) return null;
+            var svgPath = entry.provider.GetSvgPath(entry.entry.name, entry.entry.variant);
 
             var pngPath = Path.Combine(_previewTempFolder, $"{key}.png");
 
@@ -801,8 +801,7 @@ namespace KnightForge.IconImporter.Editor.Windows
                         matchedKeys.Add(key);
 
                         // State 1: icon is in the pack and in the manifest, but SVG is gone from disk.
-                        var svgPath = provider.GetSvgPath(icon.name, icon.variant);
-                        if (string.IsNullOrEmpty(svgPath) || !File.Exists(svgPath))
+                        if (!provider.HasSourceFor(icon.name, icon.variant))
                         {
                             _missingSvgKeys.Add(key);
                             staleProviders.Add(provider);

@@ -35,12 +35,7 @@ namespace KnightForge.IconImporter.Editor.Utilities
             // Only convert icons whose source SVG is still on disk.
             // Icons with missing sources are preserved through EmbedIconsAsSubassets unchanged.
             var toImport = pack.Icons
-                .Where(icon => icon.provider)
-                .Where(icon =>
-                {
-                    var svgPath = icon.provider.GetSvgPath(icon.iconName, icon.variant);
-                    return !string.IsNullOrEmpty(svgPath) && File.Exists(svgPath);
-                })
+                .Where(icon => icon.provider && icon.provider.HasSourceFor(icon.iconName, icon.variant))
                 .Select(icon => new ImportedIcon { iconName = icon.iconName, variant = icon.variant, provider = icon.provider })
                 .ToList();
 

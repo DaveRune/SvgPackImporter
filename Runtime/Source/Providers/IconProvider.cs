@@ -39,6 +39,12 @@ namespace KnightForge.IconImporter.Providers
                 : Path.Combine(GetRootPath(), variant, $"{iconName}.svg");
         }
 
+        public bool HasSourceFor(string iconName, string variant)
+        {
+            var path = GetSvgPath(iconName, variant);
+            return !string.IsNullOrEmpty(path) && File.Exists(path);
+        }
+
         public string GetRootPath()
         {
             var projectPath = Path.GetDirectoryName(Application.dataPath);

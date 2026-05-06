@@ -1,4 +1,3 @@
-using System.IO;
 using System.Linq;
 using KnightForge.IconImporter.Editor.Utilities;
 using KnightForge.IconImporter.Editor.Windows;
@@ -97,11 +96,7 @@ namespace KnightForge.IconImporter.Editor.Inspectors
                     IconGridWindow.Show(pack, _dragAsSprite.boolValue);
                 }
                 
-                var hasMissingSvg = pack.Icons.Any(i =>
-                {
-                    var path = i.provider ? i.provider.GetSvgPath(i.iconName, i.variant) : null;
-                    return !string.IsNullOrEmpty(path) && !File.Exists(path);
-                });
+                var hasMissingSvg = pack.Icons.Any(i => i.provider && !i.provider.HasSourceFor(i.iconName, i.variant));
                 if (hasMissingSvg)
                 {
                     EditorGUILayout.BeginHorizontal();

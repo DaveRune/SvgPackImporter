@@ -1,5 +1,4 @@
 using System;
-using System.IO;
 using KnightForge.IconImporter.Editor.Utilities;
 using UnityEditor;
 using UnityEngine;
@@ -68,8 +67,7 @@ namespace KnightForge.IconImporter.Editor.Inspectors
                 var id = GUIUtility.GetControlID(FocusType.Passive);
                 var variantDisplay = string.IsNullOrEmpty(icon.variant) ? "Root" : icon.variant;
 
-                var svgPath = icon.provider ? icon.provider.GetSvgPath(icon.iconName, icon.variant) : null;
-                var isMissingSvg = !string.IsNullOrEmpty(svgPath) && !File.Exists(svgPath);
+                var isMissingSvg = icon.provider && !icon.provider.HasSourceFor(icon.iconName, icon.variant);
                 var providerName = icon.provider ? icon.provider.name : null;
 
                 var tooltip = isMissingSvg
