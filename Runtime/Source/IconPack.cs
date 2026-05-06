@@ -16,8 +16,8 @@ namespace KnightForge.IconImporter
         [SerializeField] private Color _iconColor = Color.white;
         [SerializeField] private int _iconSize = 64;
 
-        [HideInInspector][SerializeField] private List<string> _activeVariants = new();
-        [HideInInspector][SerializeField] private bool _dragAsSprite = true;
+        [HideInInspector] [SerializeField] private List<string> _activeVariants = new();
+        [HideInInspector] [SerializeField] private bool _dragAsSprite = true;
 
         public List<PackedIcon> Icons => _icons;
         public IReadOnlyList<IconProvider> Providers => _providers;

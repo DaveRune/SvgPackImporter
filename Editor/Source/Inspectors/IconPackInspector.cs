@@ -2,6 +2,7 @@ using System.IO;
 using System.Linq;
 using KnightForge.IconImporter.Editor.Utilities;
 using KnightForge.IconImporter.Editor.Windows;
+using KnightForge.IconImporter.Providers;
 using UnityEditor;
 using UnityEngine;
 
@@ -50,9 +51,8 @@ namespace KnightForge.IconImporter.Editor.Inspectors
             EditorGUILayout.PropertyField(_iconColor, new GUIContent("Icon Color"));
 
             EditorGUILayout.Space(10);
-            
 
-            var hasProvider = pack.Providers.Any(p => p);
+            var hasProvider = pack.Providers.Any();
             EditorGUI.BeginDisabledGroup(!hasProvider);
 
             if (GUILayout.Button("Manage Icons", GUILayout.Height(ButtonHeight)))
@@ -125,8 +125,23 @@ namespace KnightForge.IconImporter.Editor.Inspectors
 
             for (var i = 0; i < _providers.arraySize; i++)
             {
+                var providerProp = _providers.GetArrayElementAtIndex(i);
+                var provider = providerProp.objectReferenceValue as IconProvider;
+                var supportsStroke = provider && provider.SupportsStroke;
+
+                var strokeStyle = new GUIStyle(EditorStyles.helpBox)
+                {
+                    normal = { textColor = supportsStroke ? new Color(0.4f, 1f, 0.4f) : new Color(0.65f, 0.65f, 0.65f) },
+                    alignment = TextAnchor.MiddleCenter
+                };
+
                 EditorGUILayout.BeginHorizontal();
-                EditorGUILayout.PropertyField(_providers.GetArrayElementAtIndex(i), GUIContent.none);
+                EditorGUILayout.PropertyField(providerProp, GUIContent.none);
+                if (provider)
+                {
+                    var strokeText = "Stroke " + (supportsStroke ? "✓" : "✗");
+                    GUILayout.Label(strokeText, strokeStyle, GUILayout.Width(60));
+                }
                 if (GUILayout.Button("✕", GUILayout.Width(22), GUILayout.Height(EditorGUIUtility.singleLineHeight)))
                     toRemove = i;
                 EditorGUILayout.EndHorizontal();

@@ -263,9 +263,9 @@ namespace KnightForge.IconImporter.Editor.Inspectors
             using var archive = ZipFile.OpenRead(zipPath);
             foreach (var entry in archive.Entries)
             {
-                foreach (var (variantName, zipFragment) in provider.VariantPaths)
+                foreach (var (variantName, descriptor) in provider.VariantPaths)
                 {
-                    if (!entry.FullName.Contains(zipFragment) || !entry.FullName.EndsWith(".svg"))
+                    if (!entry.FullName.Contains(descriptor.Path) || !entry.FullName.EndsWith(".svg"))
                         continue;
 
                     var dest = Path.Combine(destPath, variantName, Path.GetFileName(entry.FullName));

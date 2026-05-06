@@ -3,7 +3,9 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Text;
 using System.Text.RegularExpressions;
+using KnightForge.IconImporter.Providers;
 using UnityEditor;
 using UnityEngine;
 using Debug = UnityEngine.Debug;
@@ -88,7 +90,7 @@ namespace KnightForge.IconImporter.Editor.Utilities
 #endif
         }
 
-        public static bool TryGeneratePreview(string svgPath, string outputPngPath, int size)
+        public static bool TryGeneratePreview(string svgPath, string outputPngPath, int size, int viewBoxSize = 24)
         {
             if (!TryDetectImageMagick(out var magickPath))
                 return false;
@@ -96,9 +98,13 @@ namespace KnightForge.IconImporter.Editor.Utilities
             var tempSvgPath = outputPngPath + ".tmp.svg";
             try
             {
-                PreprocessSvg(svgPath, tempSvgPath, "#FFFFFF", 2f);
-                // Density calculated for 24x24 viewBox SVGs: size * 96 / 24 = size * 4 (SVG CSS pixels are 96dpi, not 72dpi)
-                var args = $"-background none -density {size * 4} \"{tempSvgPath}\" \"{outputPngPath}\"";
+                var content = File.ReadAllText(svgPath);
+                content = content.Replace("currentColor", "#FFFFFF");
+                content = Regex.Replace(content, @"stroke-width=""[^""]*""", @"stroke-width=""2""");
+                File.WriteAllText(tempSvgPath, content, Encoding.UTF8);
+
+                var density = Mathf.RoundToInt(size * 96f / viewBoxSize);
+                var args = $"-background none -density {density} \"{tempSvgPath}\" \"{outputPngPath}\"";
                 return ExecuteCommand(magickPath, args);
             }
             finally
@@ -108,8 +114,29 @@ namespace KnightForge.IconImporter.Editor.Utilities
             }
         }
 
-        // resolveSvgPath maps an ImportedIcon to its source SVG file path.
-        // Output PNG names are "{providerName}-{iconName}-{variant}.png".
+        public static bool TryGeneratePreviewFromContent(string svgPath, string outputPngPath, int size, IconProvider provider, string variant)
+        {
+            if (!TryDetectImageMagick(out var magickPath))
+                return false;
+
+            var tempSvgPath = outputPngPath + ".tmp.svg";
+            try
+            {
+                var content = File.ReadAllText(svgPath);
+                content = provider.PreprocessSvg(content, variant, "#FFFFFF", 2f);
+                File.WriteAllText(tempSvgPath, content, Encoding.UTF8);
+
+                var density = provider.GetDensity(size, variant);
+                var args = $"-background none -density {density} \"{tempSvgPath}\" \"{outputPngPath}\"";
+                return ExecuteCommand(magickPath, args);
+            }
+            finally
+            {
+                if (File.Exists(tempSvgPath))
+                    File.Delete(tempSvgPath);
+            }
+        }
+
         public static IEnumerator ConvertSvgsToPngs(
             List<ImportedIcon> selectedIcons,
             Func<ImportedIcon, string> resolveSvgPath,
@@ -149,12 +176,16 @@ namespace KnightForge.IconImporter.Editor.Utilities
                 }
 
                 var tempSvgPath = Path.Combine(tempFolder, pngName.Replace(".png", "_temp.svg"));
-                PreprocessSvg(svgPath, tempSvgPath, colorHex, strokeWidth);
+                var svgContent = File.ReadAllText(svgPath);
+                var processedContent = icon.provider != null
+                    ? icon.provider.PreprocessSvg(svgContent, icon.variant, colorHex, strokeWidth)
+                    : svgContent.Replace("currentColor", colorHex);
+                File.WriteAllText(tempSvgPath, processedContent, Encoding.UTF8);
 
-                // -background none and -density must precede the input file so ImageMagick
-                // applies them during rasterization, not as post-read metadata.
-                // Density calculated for 24x24 viewBox SVGs: size * 96 / 24 = size * 4 (SVG CSS pixels are 96dpi, not 72dpi)
-                var args = $"-background none -density {size * 4} \"{tempSvgPath}\" \"{pngPath}\"";
+                var density = icon.provider != null
+                    ? icon.provider.GetDensity(size, icon.variant)
+                    : Mathf.RoundToInt(size * 96f / 24);
+                var args = $"-background none -density {density} \"{tempSvgPath}\" \"{pngPath}\"";
 
                 if (ExecuteCommand(convertPath, args))
                     successCount++;
@@ -171,19 +202,6 @@ namespace KnightForge.IconImporter.Editor.Utilities
 
             progressCallback?.Invoke($"Import complete! Converted {successCount}/{selectedIcons.Count} icons.");
             AssetDatabase.Refresh();
-        }
-
-        // Replaces currentColor with the target hex and overrides stroke-width so the rendered
-        // SVG matches the pack's color and stroke settings without relying on ImageMagick's
-        // color-replacement operators (which don't work on SVG stroke/fill attributes).
-        private static void PreprocessSvg(string sourcePath, string destPath, string colorHex, float strokeWidth)
-        {
-            var content = File.ReadAllText(sourcePath);
-
-            content = content.Replace("currentColor", colorHex);
-            content = Regex.Replace(content, @"stroke-width=""[^""]*""", $"stroke-width=\"{strokeWidth:F2}\"");
-
-            File.WriteAllText(destPath, content);
         }
 
         private static bool ExecuteCommand(string command, string args)
@@ -204,13 +222,13 @@ namespace KnightForge.IconImporter.Editor.Utilities
                 process.WaitForExit();
 
                 if (process.ExitCode == 0)
-                    return process.ExitCode == 0;
+                    return true;
 
                 var error = process.StandardError.ReadToEnd();
                 if (!string.IsNullOrEmpty(error))
                     Debug.LogError($"ImageMagick: {error}");
 
-                return process.ExitCode == 0;
+                return false;
             }
             catch (Exception ex)
             {

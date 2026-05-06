@@ -9,25 +9,16 @@ namespace KnightForge.IconImporter.Providers.BuiltIn
     [CreateAssetMenu(menuName = IconImporterConstants.IconProviders + "Tabler", order = IconImporterConstants.IconProvidersBuiltIn)]
     public sealed class TablerIconProvider : RepoIconProvider
     {
-        public override IReadOnlyDictionary<string, string> VariantPaths => new Dictionary<string, string>
-        {
-            { "outline", "icons/outline/" },
-            { "filled", "icons/filled/" }
-        };
-
+        protected override string DefaultRepoUrl => "https://github.com/tabler/tabler-icons";
+        protected override string DefaultSvgRootFolder => "Tabler";
         public override string AliasesZipPath => "aliases.json";
 
-        protected override void Reset()
-        {
-            SetDefaults();
-        }
-
-        public void SetDefaults()
-        {
-            base.Reset();
-            _svgRootFolder = "Tabler";
-            _repoUrl = "https://github.com/tabler/tabler-icons";
-        }
+        public override IReadOnlyDictionary<string, VariantDescriptor> VariantPaths =>
+            new Dictionary<string, VariantDescriptor>
+            {
+                { "outline", new VariantDescriptor("icons/outline/", IconStyle.Stroke) },
+                { "filled", new VariantDescriptor("icons/filled/", IconStyle.Fill) }
+            };
 
         protected override Dictionary<string, List<string>> LoadAliases(string root)
         {

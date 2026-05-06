@@ -286,7 +286,6 @@ namespace KnightForge.IconImporter.Editor.Windows
                 AssetDatabase.CreateFolder("Assets/Resources", "IconProviders");
 
             var so = CreateInstance<TablerIconProvider>();
-            so.SetDefaults();
             AssetDatabase.CreateAsset(so, assetPath);
             AssetDatabase.SaveAssets();
 

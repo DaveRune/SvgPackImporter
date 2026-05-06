@@ -1,37 +1,63 @@
 using System.Collections.Generic;
+using System.Linq;
+using System.Text.RegularExpressions;
 using UnityEngine;
 
 namespace KnightForge.IconImporter.Providers
 {
     public abstract class RepoIconProvider : IconProvider
     {
-        [SerializeField] protected string _repoUrl;
-        [SerializeField] protected string _version = "latest";
+        [SerializeField] private string _repoUrl;
+        [SerializeField] private string _version = "latest";
 
         public string RepoUrl => _repoUrl;
         public string Version => _version;
 
-        // Key: local variant folder name. Value: path fragment to match in ZIP entries.
-        public abstract IReadOnlyDictionary<string, string> VariantPaths { get; }
+        public abstract IReadOnlyDictionary<string, VariantDescriptor> VariantPaths { get; }
 
-        // Path fragment matching the aliases file entry in the ZIP. Null means no aliases file.
         public virtual string AliasesZipPath => null;
+
+        protected abstract string DefaultRepoUrl { get; }
+        protected abstract string DefaultSvgRootFolder { get; }
+
+        public override IReadOnlyList<string> Variants => new List<string>(VariantPaths.Keys);
+
+        public override bool SupportsStroke => VariantPaths.Values.Any(v => v.Style == IconStyle.Stroke);
 
         protected virtual void Reset()
         {
-            _variants = new List<string>(VariantPaths.Keys);
+            _repoUrl = DefaultRepoUrl;
+            _svgRootFolder = DefaultSvgRootFolder;
+            _version = "latest";
+        }
+
+        public override string PreprocessSvg(string content, string variant, string colourHex, float strokeWidth)
+        {
+            var vb = GetViewBoxSizeForVariant(variant);
+            var result = base.PreprocessSvg(content, variant, colourHex, strokeWidth);
+
+            if (!VariantPaths.TryGetValue(variant, out var descriptor) || descriptor.Style != IconStyle.Stroke)
+                return result;
+
+            result = Regex.Replace(result, @"stroke-width=""[^""]*""", $"stroke-width=\"{strokeWidth:F2}\"");
+
+            var pad = strokeWidth / 2f;
+            result = Regex.Replace(result, @"viewBox=""[^""]*""",
+                $"viewBox=\"{-pad:F2} {-pad:F2} {vb.x + strokeWidth:F2} {vb.y + strokeWidth:F2}\"");
+
+            return result;
+        }
+
+        protected override Vector2Int GetViewBoxSizeForVariant(string variant)
+        {
+            if (VariantPaths.TryGetValue(variant, out var descriptor) && descriptor.ViewBoxSize.HasValue)
+                return descriptor.ViewBoxSize.Value;
+            return DefaultViewBoxSize;
         }
 
         protected override string GetManifestVersion()
         {
             return _version;
-        }
-
-        public override IconManifest BuildManifest(string versionOverride = null)
-        {
-            if (_variants == null || _variants.Count == 0)
-                _variants = new List<string>(VariantPaths.Keys);
-            return base.BuildManifest(versionOverride);
         }
     }
 }

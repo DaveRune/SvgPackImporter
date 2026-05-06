@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Text.RegularExpressions;
 using UnityEngine;
 
 namespace KnightForge.IconImporter.Providers
@@ -12,9 +13,11 @@ namespace KnightForge.IconImporter.Providers
         private const string ProvidersRoot = "IconProviders";
 
         [SerializeField] protected string _svgRootFolder = "My Local Icons";
-        [SerializeField] protected List<string> _variants = new();
+        [SerializeField] private List<string> _variants = new();
 
-        public IReadOnlyList<string> Variants => _variants;
+        public virtual IReadOnlyList<string> Variants => _variants;
+        public virtual bool SupportsStroke => false;
+        protected static Vector2Int DefaultViewBoxSize => new(24, 24);
 
         public string GetSvgPath(string iconName, string variant)
         {
@@ -29,6 +32,18 @@ namespace KnightForge.IconImporter.Providers
             return Path.Combine(projectPath, ProvidersRoot, _svgRootFolder);
         }
 
+        public int GetDensity(int targetSize, string variant)
+        {
+            var vb = GetViewBoxSizeForVariant(variant);
+            return Mathf.RoundToInt(targetSize * 96f / vb.x);
+        }
+
+        public virtual string PreprocessSvg(string content, string variant, string colourHex, float strokeWidth)
+        {
+            content = EnsureExplicitDimensions(content, GetViewBoxSizeForVariant(variant));
+            return content.Replace("currentColor", colourHex);
+        }
+
         public IconManifest LoadManifest()
         {
             var manifestPath = Path.Combine(GetRootPath(), "manifest.json");
@@ -37,7 +52,7 @@ namespace KnightForge.IconImporter.Providers
                 : JsonUtility.FromJson<IconManifest>(File.ReadAllText(manifestPath));
         }
 
-        public virtual IconManifest BuildManifest(string versionOverride = null)
+        public IconManifest BuildManifest(string versionOverride = null)
         {
             var root = GetRootPath();
 
@@ -50,11 +65,12 @@ namespace KnightForge.IconImporter.Providers
             };
 
             var aliasMap = LoadAliases(root);
+            var variants = Variants;
 
-            if (_variants == null || _variants.Count == 0)
+            if (variants == null || variants.Count == 0)
                 ScanVariant(root, string.Empty, manifest, aliasMap);
             else
-                foreach (var variant in _variants)
+                foreach (var variant in variants)
                     ScanVariant(root, variant, manifest, aliasMap);
 
             SaveManifest(root, manifest);
@@ -66,9 +82,31 @@ namespace KnightForge.IconImporter.Providers
             return "local";
         }
 
+        protected virtual Vector2Int GetViewBoxSizeForVariant(string variant)
+        {
+            return DefaultViewBoxSize;
+        }
+
         protected virtual Dictionary<string, List<string>> LoadAliases(string root)
         {
             return new Dictionary<string, List<string>>();
+        }
+
+        // Injects explicit width/height on the root <svg> if absent. ImageMagick requires these
+        // to correctly interpret the -density flag; without them it can render at the wrong scale.
+        private static string EnsureExplicitDimensions(string content, Vector2Int vb)
+        {
+            return Regex.Replace(content, @"(<svg\b)([^>]*>)", m =>
+            {
+                var attrs = m.Groups[2].Value;
+                var hasWidth = Regex.IsMatch(attrs, @"\bwidth=""[\d.]+""");
+                var hasHeight = Regex.IsMatch(attrs, @"\bheight=""[\d.]+""");
+                if (hasWidth && hasHeight) return m.Value;
+                var inject = "";
+                if (!hasWidth) inject += $" width=\"{vb.x}\"";
+                if (!hasHeight) inject += $" height=\"{vb.y}\"";
+                return m.Groups[1].Value + inject + m.Groups[2].Value;
+            });
         }
 
         private static void ScanVariant(string root, string variant, IconManifest manifest, Dictionary<string, List<string>> aliasMap)

@@ -646,13 +646,16 @@ namespace KnightForge.IconImporter.Editor.Windows
             }
             else
             {
+                var provider = entry.provider;
+                var variant = entry.entry.variant;
+
                 Interlocked.Increment(ref _inFlightCount);
                 Task.Run(async () =>
                 {
                     await GenerationThrottle.WaitAsync();
                     try
                     {
-                        ImageMagickConverter.TryGeneratePreview(svgPath, pngPath, IconPreviewSize);
+                        ImageMagickConverter.TryGeneratePreviewFromContent(svgPath, pngPath, IconPreviewSize, provider, variant);
                     }
                     finally
                     {
