@@ -67,12 +67,13 @@ namespace KnightForge.IconImporter.Editor.Inspectors
                 var id = GUIUtility.GetControlID(FocusType.Passive);
                 var variantDisplay = string.IsNullOrEmpty(icon.variant) ? "Root" : icon.variant;
 
-                var svgPath = icon.provider != null ? icon.provider.GetSvgPath(icon.iconName, icon.variant) : null;
+                var svgPath = icon.provider ? icon.provider.GetSvgPath(icon.iconName, icon.variant) : null;
                 var isMissingSvg = !string.IsNullOrEmpty(svgPath) && !File.Exists(svgPath);
+                var providerName = icon.provider ? icon.provider.name : null;
 
                 var tooltip = isMissingSvg
-                    ? $"{icon.iconName} ({variantDisplay}) [{icon.provider?.name}]\n⚠ Missing Source SVG"
-                    : $"{icon.iconName} ({variantDisplay}) [{icon.provider?.name}]";
+                    ? $"{icon.iconName} ({variantDisplay}) [{providerName}]\n⚠ Missing Source SVG"
+                    : $"{icon.iconName} ({variantDisplay}) [{providerName}]";
 
                 var cellRect = GUILayoutUtility.GetRect(IconCellSize, IconCellSize, _iconCellStyle,
                     GUILayout.Width(IconCellSize), GUILayout.Height(IconCellSize));

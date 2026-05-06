@@ -643,7 +643,7 @@ namespace KnightForge.IconImporter.Editor.Windows
             _previewTempFolder ??= Path.Combine(Application.temporaryCachePath, "IconPreviews");
             Directory.CreateDirectory(_previewTempFolder);
 
-            var svgPath = entry.provider?.GetSvgPath(entry.entry.name, entry.entry.variant);
+            var svgPath = entry.provider ? entry.provider.GetSvgPath(entry.entry.name, entry.entry.variant) : null;
             if (string.IsNullOrEmpty(svgPath) || !File.Exists(svgPath)) return null;
 
             var pngPath = Path.Combine(_previewTempFolder, $"{key}.png");

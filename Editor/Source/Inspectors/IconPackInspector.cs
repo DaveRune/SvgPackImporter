@@ -97,7 +97,7 @@ namespace KnightForge.IconImporter.Editor.Inspectors
                 
                 var hasMissingSvg = pack.Icons.Any(i =>
                 {
-                    var path = i.provider?.GetSvgPath(i.iconName, i.variant);
+                    var path = i.provider ? i.provider.GetSvgPath(i.iconName, i.variant) : null;
                     return !string.IsNullOrEmpty(path) && !File.Exists(path);
                 });
                 if (hasMissingSvg)
