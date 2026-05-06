@@ -137,10 +137,7 @@ namespace KnightForge.IconImporter.Editor.Utilities
             {
                 var icon = selectedIcons[i];
                 var svgPath = resolveSvgPath(icon);
-                var providerName = icon.provider != null ? icon.provider.name : "Unknown";
-                var pngName = string.IsNullOrEmpty(icon.variant)
-                    ? $"{providerName}-{icon.iconName}.png"
-                    : $"{providerName}-{icon.iconName}-{icon.variant}.png";
+                var pngName = $"{IconNaming.AssetName(icon.provider, icon.iconName, icon.variant)}.png";
                 var pngPath = Path.Combine(outputFolder, pngName);
 
                 progressCallback?.Invoke($"Converting {icon.iconName} ({icon.variant})... ({i + 1}/{selectedIcons.Count})");

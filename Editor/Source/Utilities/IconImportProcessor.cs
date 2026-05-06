@@ -99,13 +99,8 @@ namespace KnightForge.IconImporter.Editor.Utilities
             // whose source SVG was missing and were excluded from selectedIcons.
             var originalPackedIcons = targetPack.Icons.ToList();
 
-            var selectedAssetNames = new HashSet<string>(selectedIcons.Select(i =>
-            {
-                var pName = i.provider != null ? i.provider.name : "Unknown";
-                return string.IsNullOrEmpty(i.variant)
-                    ? $"{pName}-{i.iconName}"
-                    : $"{pName}-{i.iconName}-{i.variant}";
-            }));
+            var selectedAssetNames = new HashSet<string>(
+                selectedIcons.Select(i => IconNaming.AssetName(i.provider, i.iconName, i.variant)));
 
             var keepAssets = new HashSet<Object> { targetPack };
             targetPack.Icons.Clear();
@@ -114,10 +109,7 @@ namespace KnightForge.IconImporter.Editor.Utilities
 
             foreach (var selected in selectedIcons)
             {
-                var providerName = selected.provider != null ? selected.provider.name : "Unknown";
-                var assetName = string.IsNullOrEmpty(selected.variant)
-                    ? $"{providerName}-{selected.iconName}"
-                    : $"{providerName}-{selected.iconName}-{selected.variant}";
+                var assetName = IconNaming.AssetName(selected.provider, selected.iconName, selected.variant);
                 var pngPath = Path.Combine(outputFolder, $"{assetName}.png");
 
                 if (!File.Exists(pngPath))
@@ -208,10 +200,7 @@ namespace KnightForge.IconImporter.Editor.Utilities
             foreach (var original in originalPackedIcons)
             {
                 if (!original.provider) continue;
-                var provName = original.provider.name;
-                var aName = string.IsNullOrEmpty(original.variant)
-                    ? $"{provName}-{original.iconName}"
-                    : $"{provName}-{original.iconName}-{original.variant}";
+                var aName = IconNaming.AssetName(original.provider, original.iconName, original.variant);
                 if (selectedAssetNames.Contains(aName)) continue;
 
                 if (original.texture) keepAssets.Add(original.texture);
