@@ -168,8 +168,15 @@ namespace KnightForge.IconImporter.Editor.Windows
 
             if (_targetPack && _targetPack.ActiveVariants.Any())
             {
-                var loaded = new HashSet<string>(_targetPack.ActiveVariants);
+                var saved = new HashSet<string>(_targetPack.ActiveVariants);
+                var trackedGuids = new HashSet<string>(saved.Select(v => v.Split('/')[0]));
+
+                var loaded = new HashSet<string>(saved);
                 loaded.IntersectWith(variantSet);
+
+                foreach (var variant in variantSet.Where(variant => !trackedGuids.Contains(variant.Split('/')[0])))
+                    loaded.Add(variant);
+
                 _activeVariants = loaded.Count > 0 ? loaded : new HashSet<string>(variantSet);
             }
             else
