@@ -6,7 +6,7 @@ namespace KnightForge.IconImporter.Providers.BuiltIn
     [CreateAssetMenu(fileName = "Iconoir", menuName = IconImporterConstants.IconProviders + "Iconoir", order = IconImporterConstants.IconProvidersBuiltIn)]
     public sealed class IconoirIconProvider : RepoIconProvider
     {
-        protected override string DefaultRepoUrl => "https://github.com/iconoir-icons/iconoir";
+        public override string DefaultRepoUrl => "https://github.com/iconoir-icons/iconoir";
         protected override string DefaultSvgRootFolder => "Iconoir";
 
         public override IReadOnlyDictionary<string, VariantDescriptor> VariantPaths =>

@@ -7,7 +7,7 @@ namespace KnightForge.IconImporter.Providers.BuiltIn
     [CreateAssetMenu(fileName = "SimpleIcons", menuName = IconImporterConstants.IconProviders + "Simple Icons", order = IconImporterConstants.IconProvidersBuiltIn)]
     public sealed class SimpleIconsProvider : RepoIconProvider
     {
-        protected override string DefaultRepoUrl => "https://github.com/simple-icons/simple-icons";
+        public override string DefaultRepoUrl => "https://github.com/simple-icons/simple-icons";
         protected override string DefaultSvgRootFolder => "SimpleIcons";
 
         public override IReadOnlyDictionary<string, VariantDescriptor> VariantPaths =>

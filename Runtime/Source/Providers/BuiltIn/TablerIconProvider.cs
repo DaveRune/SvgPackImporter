@@ -9,7 +9,7 @@ namespace KnightForge.IconImporter.Providers.BuiltIn
     [CreateAssetMenu(menuName = IconImporterConstants.IconProviders + "Tabler", order = IconImporterConstants.IconProvidersBuiltIn)]
     public sealed class TablerIconProvider : RepoIconProvider
     {
-        protected override string DefaultRepoUrl => "https://github.com/tabler/tabler-icons";
+        public override string DefaultRepoUrl => "https://github.com/tabler/tabler-icons";
         protected override string DefaultSvgRootFolder => "Tabler";
         public override string AliasesZipPath => "aliases.json";
 

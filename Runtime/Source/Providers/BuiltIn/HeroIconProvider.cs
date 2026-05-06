@@ -6,7 +6,7 @@ namespace KnightForge.IconImporter.Providers.BuiltIn
     [CreateAssetMenu(fileName = "HeroIcon", menuName = IconImporterConstants.IconProviders + "Heroicons", order = IconImporterConstants.IconProvidersBuiltIn)]
     public sealed class HeroIconProvider : RepoIconProvider
     {
-        protected override string DefaultRepoUrl => "https://github.com/tailwindlabs/heroicons";
+        public override string DefaultRepoUrl => "https://github.com/tailwindlabs/heroicons";
         protected override string DefaultSvgRootFolder => "Heroicons";
 
         public override IReadOnlyDictionary<string, VariantDescriptor> VariantPaths =>

@@ -17,7 +17,7 @@ namespace KnightForge.IconImporter.Providers
 
         public virtual string AliasesZipPath => null;
 
-        protected abstract string DefaultRepoUrl { get; }
+        public abstract string DefaultRepoUrl { get; }
         protected abstract string DefaultSvgRootFolder { get; }
 
         public override IReadOnlyList<string> Variants => new List<string>(VariantPaths.Keys);
