@@ -1,13 +1,17 @@
 using UnityEditor;
+using UnityEditorInternal;
 using UnityEngine;
 
 namespace KnightForge.IconImporter.Editor.Data
 {
+    /// Editor-only project settings persisted to the ProjectSettings folder so they do not
+    /// ship with player builds and do not force consumers to create an Assets/Resources folder.
     [Icon("Packages/com.knightforge.iconimporter/Editor/Icons/IconImporterSettings.png")]
-    public sealed class IconImporterSettings : ScriptableObject
+    internal sealed class IconImporterSettings : ScriptableObject
     {
-        private const string SettingsAssetPath = "Assets/Resources/IconImporterSettings.asset";
+        private const string SettingsPath = "ProjectSettings/IconImporterSettings.asset";
         private static IconImporterSettings _instance;
+
         public string imageMagickPath = "";
         public bool imageMagickDetected;
         public bool hasCompletedSetup;
@@ -17,18 +21,23 @@ namespace KnightForge.IconImporter.Editor.Data
             get
             {
                 if (_instance) return _instance;
-                _instance = AssetDatabase.LoadAssetAtPath<IconImporterSettings>(SettingsAssetPath);
 
-                if (_instance) return _instance;
-                if (!AssetDatabase.IsValidFolder("Assets/Resources"))
-                    AssetDatabase.CreateFolder("Assets", "Resources");
+                var loaded = InternalEditorUtility.LoadSerializedFileAndForget(SettingsPath);
+                if (loaded.Length > 0 && loaded[0] is IconImporterSettings existing)
+                {
+                    _instance = existing;
+                    return _instance;
+                }
 
                 _instance = CreateInstance<IconImporterSettings>();
-                AssetDatabase.CreateAsset(_instance, SettingsAssetPath);
-                AssetDatabase.SaveAssets();
-
                 return _instance;
             }
+        }
+
+        public static void Save()
+        {
+            if (!_instance) return;
+            InternalEditorUtility.SaveToSerializedFileAndForget(new Object[] { _instance }, SettingsPath, true);
         }
     }
 }

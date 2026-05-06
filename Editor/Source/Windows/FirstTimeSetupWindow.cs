@@ -326,8 +326,7 @@ namespace KnightForge.IconImporter.Editor.Windows
             }
 
             settings.hasCompletedSetup = true;
-            EditorUtility.SetDirty(settings);
-            AssetDatabase.SaveAssets();
+            IconImporterSettings.Save();
         }
 
         private static void DrawSeparator()
