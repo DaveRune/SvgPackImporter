@@ -12,11 +12,12 @@ namespace KnightForge.IconImporter.Providers.BuiltIn
 
         protected override string GenerateStableId() => "simpleicons";
 
-        public override IReadOnlyDictionary<string, VariantDescriptor> VariantPaths =>
-            new Dictionary<string, VariantDescriptor>
-            {
-                { "", new VariantDescriptor("icons/", IconStyle.Fill) }
-            };
+        private static readonly Dictionary<string, VariantDescriptor> Paths = new()
+        {
+            { "", new VariantDescriptor("icons/", IconStyle.Fill) }
+        };
+
+        public override IReadOnlyDictionary<string, VariantDescriptor> VariantPaths => Paths;
 
         public override string PreprocessSvg(string content, string variant, string colorHex, float strokeWidth)
         {

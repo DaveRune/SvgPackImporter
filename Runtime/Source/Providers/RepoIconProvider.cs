@@ -20,7 +20,8 @@ namespace KnightForge.IconImporter.Providers
         public abstract string DefaultRepoUrl { get; }
         protected abstract string DefaultSvgRootFolder { get; }
 
-        public override IReadOnlyList<string> Variants => new List<string>(VariantPaths.Keys);
+        private IReadOnlyList<string> _cachedVariants;
+        public override IReadOnlyList<string> Variants => _cachedVariants ??= new List<string>(VariantPaths.Keys);
 
         public override bool SupportsStroke => VariantPaths.Values.Any(v => v.Style == IconStyle.Stroke);
 

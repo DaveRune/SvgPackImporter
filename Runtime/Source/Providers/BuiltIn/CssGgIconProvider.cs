@@ -11,10 +11,11 @@ namespace KnightForge.IconImporter.Providers.BuiltIn
 
         protected override string GenerateStableId() => "cssgg";
 
-        public override IReadOnlyDictionary<string, VariantDescriptor> VariantPaths =>
-            new Dictionary<string, VariantDescriptor>
-            {
-                { "", new VariantDescriptor("icons/svg/", IconStyle.Fill) }
-            };
+        private static readonly Dictionary<string, VariantDescriptor> Paths = new()
+        {
+            { "", new VariantDescriptor("icons/svg/", IconStyle.Fill) }
+        };
+
+        public override IReadOnlyDictionary<string, VariantDescriptor> VariantPaths => Paths;
     }
 }

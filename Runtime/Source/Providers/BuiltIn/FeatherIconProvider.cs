@@ -11,10 +11,11 @@ namespace KnightForge.IconImporter.Providers.BuiltIn
 
         protected override string GenerateStableId() => "feather";
 
-        public override IReadOnlyDictionary<string, VariantDescriptor> VariantPaths =>
-            new Dictionary<string, VariantDescriptor>
-            {
-                { "", new VariantDescriptor("icons/", IconStyle.Stroke) }
-            };
+        private static readonly Dictionary<string, VariantDescriptor> Paths = new()
+        {
+            { "", new VariantDescriptor("icons/", IconStyle.Stroke) }
+        };
+
+        public override IReadOnlyDictionary<string, VariantDescriptor> VariantPaths => Paths;
     }
 }

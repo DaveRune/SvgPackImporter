@@ -11,11 +11,12 @@ namespace KnightForge.IconImporter.Providers.BuiltIn
 
         protected override string GenerateStableId() => "heroicons";
 
-        public override IReadOnlyDictionary<string, VariantDescriptor> VariantPaths =>
-            new Dictionary<string, VariantDescriptor>
-            {
-                { "outline", new VariantDescriptor("optimized/24/outline/", IconStyle.Stroke) },
-                { "solid", new VariantDescriptor("optimized/24/solid/", IconStyle.Fill) }
-            };
+        private static readonly Dictionary<string, VariantDescriptor> Paths = new()
+        {
+            { "outline", new VariantDescriptor("optimized/24/outline/", IconStyle.Stroke) },
+            { "solid", new VariantDescriptor("optimized/24/solid/", IconStyle.Fill) }
+        };
+
+        public override IReadOnlyDictionary<string, VariantDescriptor> VariantPaths => Paths;
     }
 }

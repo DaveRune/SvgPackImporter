@@ -15,12 +15,13 @@ namespace KnightForge.IconImporter.Providers.BuiltIn
 
         protected override string GenerateStableId() => "tabler";
 
-        public override IReadOnlyDictionary<string, VariantDescriptor> VariantPaths =>
-            new Dictionary<string, VariantDescriptor>
-            {
-                { "outline", new VariantDescriptor("icons/outline/", IconStyle.Stroke) },
-                { "filled", new VariantDescriptor("icons/filled/", IconStyle.Fill) }
-            };
+        private static readonly Dictionary<string, VariantDescriptor> Paths = new()
+        {
+            { "outline", new VariantDescriptor("icons/outline/", IconStyle.Stroke) },
+            { "filled", new VariantDescriptor("icons/filled/", IconStyle.Fill) }
+        };
+
+        public override IReadOnlyDictionary<string, VariantDescriptor> VariantPaths => Paths;
 
         protected override Dictionary<string, List<string>> LoadAliases(string root)
         {
