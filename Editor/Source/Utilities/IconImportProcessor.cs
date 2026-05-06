@@ -102,7 +102,7 @@ namespace KnightForge.IconImporter.Editor.Utilities
                 selectedIcons.Select(i => IconNaming.StableKey(i.provider, i.iconName, i.variant)));
 
             var keepAssets = new HashSet<Object> { targetPack };
-            targetPack.Icons.Clear();
+            targetPack.ClearIcons();
 
             var embedded = 0;
 
@@ -188,7 +188,7 @@ namespace KnightForge.IconImporter.Editor.Utilities
                 sprite.hideFlags = HideFlags.HideInHierarchy;
                 keepAssets.Add(sprite);
 
-                targetPack.Icons.Add(new IconPack.PackedIcon
+                targetPack.AddIcon(new IconPack.PackedIcon
                 {
                     iconName = selected.iconName,
                     variant = selected.variant,
@@ -210,7 +210,7 @@ namespace KnightForge.IconImporter.Editor.Utilities
 
                 if (original.texture) keepAssets.Add(original.texture);
                 if (original.sprite) keepAssets.Add(original.sprite);
-                targetPack.Icons.Add(original);
+                targetPack.AddIcon(original);
             }
 
             foreach (var asset in AssetDatabase.LoadAllAssetsAtPath(assetPath))

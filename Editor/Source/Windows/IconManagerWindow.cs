@@ -708,7 +708,7 @@ namespace KnightForge.IconImporter.Editor.Windows
             var iconsToRemove = new HashSet<string>(_pendingDeletions);
             if (!ConfirmIfWillRemoveIcons(iconsToRemove)) return;
 
-            _targetPack.Icons.RemoveAll(i => i.provider && iconsToRemove.Contains(EntryKey(i)));
+            _targetPack.RemoveIconsWhere(i => i.provider && iconsToRemove.Contains(EntryKey(i)));
 
             var currentKeys = new HashSet<string>(_targetPack.Icons
                 .Where(i => i.provider)
@@ -716,7 +716,7 @@ namespace KnightForge.IconImporter.Editor.Windows
 
             foreach (var (key, entry) in _pendingAdditions)
                 if (!currentKeys.Contains(key))
-                    _targetPack.Icons.Add(new IconPack.PackedIcon
+                    _targetPack.AddIcon(new IconPack.PackedIcon
                     {
                         iconName = entry.entry.name,
                         variant = entry.entry.variant,

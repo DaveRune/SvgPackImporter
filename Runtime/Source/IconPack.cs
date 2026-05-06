@@ -19,12 +19,16 @@ namespace KnightForge.IconImporter
         [HideInInspector] [SerializeField] private List<string> _activeVariants = new();
         [HideInInspector] [SerializeField] private bool _dragAsSprite = true;
 
-        public List<PackedIcon> Icons => _icons;
+        public IReadOnlyList<PackedIcon> Icons => _icons;
         public IReadOnlyList<IconProvider> Providers => _providers;
         public float StrokeWidth => _strokeWidth;
         public Color IconColor => _iconColor;
         public int IconSize => _iconSize;
         public List<string> ActiveVariants => _activeVariants;
+
+        internal void ClearIcons() => _icons.Clear();
+        internal void AddIcon(PackedIcon icon) => _icons.Add(icon);
+        internal int RemoveIconsWhere(Predicate<PackedIcon> predicate) => _icons.RemoveAll(predicate);
 
         [Serializable]
         public class PackedIcon
