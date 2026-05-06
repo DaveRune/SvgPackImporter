@@ -8,7 +8,14 @@ namespace KnightForge.IconImporter.Editor.Inspectors
     [CustomEditor(typeof(IconProvider), true)]
     public class IconProviderInspector : UnityEditor.Editor
     {
+        private static readonly Color OkTextColor = new(0.3f, 0.75f, 0.3f);
+        private static readonly Color VariantPrefixColor = new(0.55f, 0.55f, 0.55f);
+        private static readonly Color RemoveButtonColor = new(0.75f, 0.15f, 0.15f);
+
         protected IconManifest manifest;
+
+        private GUIStyle _okStyle;
+        private GUIStyle _variantPrefixStyle;
 
         protected virtual void OnEnable()
         {
@@ -20,6 +27,7 @@ namespace KnightForge.IconImporter.Editor.Inspectors
         public override void OnInspectorGUI()
         {
             serializedObject.Update();
+            EnsureStyles();
 
             var provider = (IconProvider)target;
 
@@ -101,11 +109,7 @@ namespace KnightForge.IconImporter.Editor.Inspectors
             var rootPath = Path.Combine(projectPath, "IconProviders", svgRoot);
 
             var prefixText = $"{svgRoot}/";
-            var prefixStyle = new GUIStyle(EditorStyles.miniLabel)
-            {
-                normal = { textColor = new Color(0.55f, 0.55f, 0.55f) }
-            };
-            var prefixWidth = prefixStyle.CalcSize(new GUIContent(prefixText)).x;
+            var prefixWidth = _variantPrefixStyle.CalcSize(new GUIContent(prefixText)).x;
 
             var toRemove = -1;
 
@@ -116,7 +120,7 @@ namespace KnightForge.IconImporter.Editor.Inspectors
                 var exists = !string.IsNullOrEmpty(element.stringValue) && Directory.Exists(variantPath);
 
                 EditorGUILayout.BeginHorizontal();
-                EditorGUILayout.LabelField(prefixText, prefixStyle, GUILayout.Width(prefixWidth));
+                EditorGUILayout.LabelField(prefixText, _variantPrefixStyle, GUILayout.Width(prefixWidth));
                 element.stringValue = EditorGUILayout.TextField(element.stringValue);
                 if (GUILayout.Button(exists ? "Browse" : "Create", GUILayout.Width(60), GUILayout.Height(EditorGUIUtility.singleLineHeight)))
                 {
@@ -147,12 +151,7 @@ namespace KnightForge.IconImporter.Editor.Inspectors
 
             if (manifest != null && manifest.icons != null)
             {
-                var okStyle = new GUIStyle(EditorStyles.label)
-                {
-                    normal = { textColor = new Color(0.3f, 0.75f, 0.3f) },
-                    fontStyle = FontStyle.Bold
-                };
-                EditorGUILayout.LabelField($"✓  {manifest.icons.Count:N0} icons  ({manifest.version})", okStyle);
+                EditorGUILayout.LabelField($"✓  {manifest.icons.Count:N0} icons  ({manifest.version})", _okStyle);
             }
             else
             {
@@ -167,7 +166,7 @@ namespace KnightForge.IconImporter.Editor.Inspectors
             EditorGUILayout.Space(16);
 
             var prevColor = GUI.backgroundColor;
-            GUI.backgroundColor = new Color(0.75f, 0.15f, 0.15f);
+            GUI.backgroundColor = RemoveButtonColor;
             var clicked = GUILayout.Button("Remove", GUILayout.Height(30));
             GUI.backgroundColor = prevColor;
 
@@ -194,5 +193,21 @@ namespace KnightForge.IconImporter.Editor.Inspectors
             "Any previously generated PNG textures will persist, but you will not be able to " +
             "import or update icons from this source until the files are restored.\n\n" +
             "This cannot be undone.";
+
+        private void EnsureStyles()
+        {
+            if (_okStyle != null) return;
+
+            _okStyle = new GUIStyle(EditorStyles.label)
+            {
+                normal = { textColor = OkTextColor },
+                fontStyle = FontStyle.Bold
+            };
+
+            _variantPrefixStyle = new GUIStyle(EditorStyles.miniLabel)
+            {
+                normal = { textColor = VariantPrefixColor }
+            };
+        }
     }
 }

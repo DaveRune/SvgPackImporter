@@ -14,6 +14,12 @@ namespace KnightForge.IconImporter.Editor.Windows
     {
         private static readonly string[] StepTitles = { "Welcome", "ImageMagick", "Providers", "Done" };
 
+        private static readonly Color StepActiveColor = new(0.25f, 0.6f, 1f);
+        private static readonly Color StepDoneColor = new(0.35f, 0.75f, 0.35f);
+        private static readonly Color OkColor = new(0.3f, 0.8f, 0.3f);
+        private static readonly Color ErrorColor = new(0.9f, 0.3f, 0.3f);
+        private static readonly Color SeparatorColor = new(0.5f, 0.5f, 0.5f, 0.3f);
+
         private readonly Dictionary<Type, string> _repoUrlCache = new();
 
         private int _currentStep;
@@ -22,8 +28,19 @@ namespace KnightForge.IconImporter.Editor.Windows
         private bool _pathVerified;
         private bool _searchPerformed;
 
+        private GUIStyle _headerStyle;
+        private GUIStyle _stepActiveStyle;
+        private GUIStyle _stepDoneStyle;
+        private GUIStyle _stepPendingStyle;
+        private GUIStyle _body12Style;
+        private GUIStyle _bodyStyle;
+        private GUIStyle _okBoldStyle;
+        private GUIStyle _okMiniStyle;
+        private GUIStyle _errorStyle;
+
         private void OnGUI()
         {
+            EnsureStyles();
             DrawHeader();
             DrawStepIndicator();
             DrawSeparator();
@@ -43,21 +60,14 @@ namespace KnightForge.IconImporter.Editor.Windows
             window.minSize = new Vector2(500, 400);
             window.maxSize = new Vector2(500, 400);
             window.ShowUtility();
-            
+
             window.DetectImageMagickInstallation();
         }
 
-        private static void DrawHeader()
+        private void DrawHeader()
         {
-            var style = new GUIStyle(EditorStyles.largeLabel)
-            {
-                fontSize = 16,
-                fontStyle = FontStyle.Bold,
-                alignment = TextAnchor.MiddleCenter
-            };
-
             GUILayout.Space(10);
-            GUILayout.Label("IconImporter  -  First Time Setup", style);
+            GUILayout.Label("IconImporter  -  First Time Setup", _headerStyle);
             GUILayout.Space(6);
         }
 
@@ -68,22 +78,15 @@ namespace KnightForge.IconImporter.Editor.Windows
 
             for (var i = 0; i < StepTitles.Length; i++)
             {
-                var style = new GUIStyle(EditorStyles.miniLabel);
-
-                if (i == _currentStep)
-                {
-                    style.fontStyle = FontStyle.Bold;
-                    style.normal.textColor = new Color(0.25f, 0.6f, 1f);
-                }
-                else if (i < _currentStep)
-                {
-                    style.normal.textColor = new Color(0.35f, 0.75f, 0.35f);
-                }
+                GUIStyle style;
+                if (i == _currentStep) style = _stepActiveStyle;
+                else if (i < _currentStep) style = _stepDoneStyle;
+                else style = _stepPendingStyle;
 
                 GUILayout.Label($"{i + 1}. {StepTitles[i]}", style);
 
                 if (i < StepTitles.Length - 1)
-                    GUILayout.Label("  ›  ", EditorStyles.miniLabel);
+                    GUILayout.Label("  ›  ", _stepPendingStyle);
             }
 
             GUILayout.FlexibleSpace();
@@ -92,8 +95,6 @@ namespace KnightForge.IconImporter.Editor.Windows
 
         private void DrawWelcomeStep()
         {
-            var body = new GUIStyle(EditorStyles.wordWrappedLabel) { fontSize = 12 };
-
             GUILayout.Space(16);
             GUILayout.Label("Welcome to IconImporter!", EditorStyles.boldLabel);
             GUILayout.Space(8);
@@ -101,7 +102,7 @@ namespace KnightForge.IconImporter.Editor.Windows
                 "This tool lets you import SVG icon packs into Unity, preview them, and batch-convert " +
                 "them to PNG sprites ready for use in your UI.\n\n" +
                 "This wizard will walk you through the one-time setup.",
-                body);
+                _body12Style);
 
             GUILayout.FlexibleSpace();
             DrawSeparator();
@@ -110,13 +111,11 @@ namespace KnightForge.IconImporter.Editor.Windows
 
         private void DrawImageMagickStep()
         {
-            var body = new GUIStyle(EditorStyles.wordWrappedLabel);
-
             GUILayout.Space(10);
             GUILayout.Label("ImageMagick", EditorStyles.boldLabel);
             GUILayout.Label(
                 "ImageMagick converts SVG icons to PNG sprites. It is free and open-source.",
-                body);
+                _bodyStyle);
 
             GUILayout.Space(6);
 
@@ -138,15 +137,9 @@ namespace KnightForge.IconImporter.Editor.Windows
             if (_searchPerformed)
             {
                 if (_pathVerified)
-                {
-                    var ok = new GUIStyle(EditorStyles.label) { normal = { textColor = new Color(0.3f, 0.8f, 0.3f) }, fontStyle = FontStyle.Bold };
-                    GUILayout.Label("✓  Found", ok);
-                }
+                    GUILayout.Label("✓  Found", _okBoldStyle);
                 else
-                {
-                    var err = new GUIStyle(EditorStyles.label) { normal = { textColor = new Color(0.9f, 0.3f, 0.3f) } };
-                    GUILayout.Label("✗  Not found - install it, then search again", err);
-                }
+                    GUILayout.Label("✗  Not found - install it, then search again", _errorStyle);
             }
 
             GUILayout.EndHorizontal();
@@ -207,14 +200,12 @@ namespace KnightForge.IconImporter.Editor.Windows
 
         private void DrawProvidersStep()
         {
-            var body = new GUIStyle(EditorStyles.wordWrappedLabel);
-
             GUILayout.Space(10);
             GUILayout.Label("Built-in Icon Providers", EditorStyles.boldLabel);
             GUILayout.Label(
                 "Add built-in providers to your project. Each creates a provider asset you configure " +
                 "and use to download icons.",
-                body);
+                _bodyStyle);
 
             GUILayout.Space(10);
             DrawSeparator();
@@ -253,14 +244,9 @@ namespace KnightForge.IconImporter.Editor.Windows
             GUILayout.FlexibleSpace();
 
             if (AssetDatabase.LoadAssetAtPath<T>(assetPath))
-            {
-                var ok = new GUIStyle(EditorStyles.miniLabel) { normal = { textColor = new Color(0.3f, 0.8f, 0.3f) } };
-                GUILayout.Label("✓ Added", ok, GUILayout.Width(60));
-            }
+                GUILayout.Label("✓ Added", _okMiniStyle, GUILayout.Width(60));
             else if (GUILayout.Button("Add to Project", GUILayout.Width(100), GUILayout.Height(22)))
-            {
                 AddProvider<T>();
-            }
 
             EditorGUILayout.EndHorizontal();
         }
@@ -281,21 +267,15 @@ namespace KnightForge.IconImporter.Editor.Windows
         private void DrawCompleteStep()
         {
             var settings = IconImporterSettings.Instance;
-            var body = new GUIStyle(EditorStyles.wordWrappedLabel);
 
             GUILayout.Space(16);
             GUILayout.Label("Setup Complete!", EditorStyles.boldLabel);
             GUILayout.Space(8);
 
             if (settings.imageMagickDetected)
-            {
-                var ok = new GUIStyle(EditorStyles.label) { normal = { textColor = new Color(0.3f, 0.8f, 0.3f) }, fontStyle = FontStyle.Bold };
-                GUILayout.Label($"✓  ImageMagick: {settings.imageMagickPath}", ok);
-            }
+                GUILayout.Label($"✓  ImageMagick: {settings.imageMagickPath}", _okBoldStyle);
             else
-            {
-                GUILayout.Label("ImageMagick not configured. Set the path later via Tools > IconImporter > Setup.", body);
-            }
+                GUILayout.Label("ImageMagick not configured. Set the path later via Tools > IconImporter > Setup.", _bodyStyle);
 
             GUILayout.Space(10);
             GUILayout.Label(
@@ -303,7 +283,7 @@ namespace KnightForge.IconImporter.Editor.Windows
                 "• Select a provider asset and click 'Download and Setup'\n" +
                 "• Right-click in the Project window and choose Create > IconImporter > Icon Pack\n" +
                 "• Assign your provider to the pack and click 'Manage Icons'",
-                body);
+                _bodyStyle);
 
             GUILayout.FlexibleSpace();
             DrawSeparator();
@@ -354,7 +334,7 @@ namespace KnightForge.IconImporter.Editor.Windows
         {
             var rect = EditorGUILayout.GetControlRect(false, 1);
             rect.height = 1;
-            EditorGUI.DrawRect(rect, new Color(0.5f, 0.5f, 0.5f, 0.3f));
+            EditorGUI.DrawRect(rect, SeparatorColor);
         }
 
         private static void DrawFooterButtons(bool showBack, Action onBack = null, string nextLabel = "Next", bool nextEnabled = true, Action onNext = null)
@@ -375,6 +355,50 @@ namespace KnightForge.IconImporter.Editor.Windows
 
             GUILayout.EndHorizontal();
             GUILayout.Space(8);
+        }
+
+        private void EnsureStyles()
+        {
+            if (_headerStyle != null) return;
+
+            _headerStyle = new GUIStyle(EditorStyles.largeLabel)
+            {
+                fontSize = 16,
+                fontStyle = FontStyle.Bold,
+                alignment = TextAnchor.MiddleCenter
+            };
+
+            _stepActiveStyle = new GUIStyle(EditorStyles.miniLabel)
+            {
+                fontStyle = FontStyle.Bold,
+                normal = { textColor = StepActiveColor }
+            };
+
+            _stepDoneStyle = new GUIStyle(EditorStyles.miniLabel)
+            {
+                normal = { textColor = StepDoneColor }
+            };
+
+            _stepPendingStyle = new GUIStyle(EditorStyles.miniLabel);
+
+            _body12Style = new GUIStyle(EditorStyles.wordWrappedLabel) { fontSize = 12 };
+            _bodyStyle = new GUIStyle(EditorStyles.wordWrappedLabel);
+
+            _okBoldStyle = new GUIStyle(EditorStyles.label)
+            {
+                normal = { textColor = OkColor },
+                fontStyle = FontStyle.Bold
+            };
+
+            _okMiniStyle = new GUIStyle(EditorStyles.miniLabel)
+            {
+                normal = { textColor = OkColor }
+            };
+
+            _errorStyle = new GUIStyle(EditorStyles.label)
+            {
+                normal = { textColor = ErrorColor }
+            };
         }
     }
 }
