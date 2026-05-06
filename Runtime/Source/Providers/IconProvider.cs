@@ -7,8 +7,7 @@ using UnityEngine;
 namespace KnightForge.IconImporter.Providers
 {
     [Icon("Packages/com.knightforge.iconimporter/Editor/Icons/IconProvider.png")]
-    [CreateAssetMenu(menuName = IconImporterConstants.IconProviders + "Local", order = 1)]
-    public class IconProvider : ScriptableObject
+    public abstract class IconProvider : ScriptableObject
     {
         private const string ProvidersRoot = "IconProviders";
 
