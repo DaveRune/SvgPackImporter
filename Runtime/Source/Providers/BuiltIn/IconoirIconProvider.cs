@@ -9,6 +9,8 @@ namespace KnightForge.IconImporter.Providers.BuiltIn
         public override string DefaultRepoUrl => "https://github.com/iconoir-icons/iconoir";
         protected override string DefaultSvgRootFolder => "Iconoir";
 
+        protected override string GenerateStableId() => "iconoir";
+
         public override IReadOnlyDictionary<string, VariantDescriptor> VariantPaths =>
             new Dictionary<string, VariantDescriptor>
             {

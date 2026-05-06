@@ -9,6 +9,8 @@ namespace KnightForge.IconImporter.Providers.BuiltIn
         public override string DefaultRepoUrl => "https://github.com/astrit/css.gg";
         protected override string DefaultSvgRootFolder => "CssGg";
 
+        protected override string GenerateStableId() => "cssgg";
+
         public override IReadOnlyDictionary<string, VariantDescriptor> VariantPaths =>
             new Dictionary<string, VariantDescriptor>
             {

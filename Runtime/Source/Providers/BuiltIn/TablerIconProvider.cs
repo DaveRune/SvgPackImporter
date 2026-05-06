@@ -13,6 +13,8 @@ namespace KnightForge.IconImporter.Providers.BuiltIn
         protected override string DefaultSvgRootFolder => "Tabler";
         public override string AliasesZipPath => "aliases.json";
 
+        protected override string GenerateStableId() => "tabler";
+
         public override IReadOnlyDictionary<string, VariantDescriptor> VariantPaths =>
             new Dictionary<string, VariantDescriptor>
             {

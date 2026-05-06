@@ -9,6 +9,8 @@ namespace KnightForge.IconImporter.Providers.BuiltIn
         public override string DefaultRepoUrl => "https://github.com/tailwindlabs/heroicons";
         protected override string DefaultSvgRootFolder => "Heroicons";
 
+        protected override string GenerateStableId() => "heroicons";
+
         public override IReadOnlyDictionary<string, VariantDescriptor> VariantPaths =>
             new Dictionary<string, VariantDescriptor>
             {

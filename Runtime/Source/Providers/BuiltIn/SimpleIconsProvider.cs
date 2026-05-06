@@ -10,6 +10,8 @@ namespace KnightForge.IconImporter.Providers.BuiltIn
         public override string DefaultRepoUrl => "https://github.com/simple-icons/simple-icons";
         protected override string DefaultSvgRootFolder => "SimpleIcons";
 
+        protected override string GenerateStableId() => "simpleicons";
+
         public override IReadOnlyDictionary<string, VariantDescriptor> VariantPaths =>
             new Dictionary<string, VariantDescriptor>
             {

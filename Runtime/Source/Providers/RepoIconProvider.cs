@@ -24,8 +24,9 @@ namespace KnightForge.IconImporter.Providers
 
         public override bool SupportsStroke => VariantPaths.Values.Any(v => v.Style == IconStyle.Stroke);
 
-        protected virtual void Reset()
+        protected override void Reset()
         {
+            base.Reset();
             _repoUrl = DefaultRepoUrl;
             _svgRootFolder = DefaultSvgRootFolder;
             _version = "latest";

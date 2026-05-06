@@ -11,12 +11,26 @@ namespace KnightForge.IconImporter.Providers
     {
         private const string ProvidersRoot = "IconProviders";
 
+        [HideInInspector] [SerializeField] private string _stableId;
+
         [SerializeField] protected string _svgRootFolder = "My Local Icons";
         [SerializeField] private List<string> _variants = new();
 
+        public string StableId => _stableId;
         public virtual IReadOnlyList<string> Variants => _variants;
         public virtual bool SupportsStroke => false;
         protected static Vector2Int DefaultViewBoxSize => new(24, 24);
+
+        protected virtual void Reset()
+        {
+            if (string.IsNullOrEmpty(_stableId))
+                _stableId = GenerateStableId();
+        }
+
+        protected virtual string GenerateStableId()
+        {
+            return Guid.NewGuid().ToString("N")[..8];
+        }
 
         public string GetSvgPath(string iconName, string variant)
         {
