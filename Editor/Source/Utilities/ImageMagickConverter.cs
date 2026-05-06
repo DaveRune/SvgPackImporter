@@ -15,7 +15,32 @@ namespace KnightForge.IconImporter.Editor.Utilities
 {
     public static class ImageMagickConverter
     {
+        // Cached for the editor session so per-icon preview generation doesn't repeatedly scan
+        // Program Files. Cleared by InvalidateDetectionCache when the saved path changes.
+        private static string _cachedExecutablePath;
+        private static bool _cacheValid;
+
+        public static void InvalidateDetectionCache()
+        {
+            _cachedExecutablePath = null;
+            _cacheValid = false;
+        }
+
         public static bool TryDetectImageMagick(out string executablePath)
+        {
+            if (_cacheValid)
+            {
+                executablePath = _cachedExecutablePath;
+                return !string.IsNullOrEmpty(executablePath);
+            }
+
+            var found = TryDetectInternal(out executablePath);
+            _cachedExecutablePath = found ? executablePath : null;
+            _cacheValid = true;
+            return found;
+        }
+
+        private static bool TryDetectInternal(out string executablePath)
         {
             executablePath = "";
 

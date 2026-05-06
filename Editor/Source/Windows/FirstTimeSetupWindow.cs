@@ -327,6 +327,7 @@ namespace KnightForge.IconImporter.Editor.Windows
 
             settings.HasCompletedSetup = true;
             IconImporterSettings.Save();
+            ImageMagickConverter.InvalidateDetectionCache();
         }
 
         private static void DrawSeparator()
