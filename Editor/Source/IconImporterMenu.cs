@@ -5,7 +5,7 @@ namespace KnightForge.IconImporter.Editor
 {
     public static class IconImporterMenu
     {
-        [MenuItem(IconImporterConstants.MenuRoot + "/Setup")]
+        [MenuItem(EditorMenuConstants.MenuRoot + "/Setup")]
         public static void OpenSetupWindow()
         {
             FirstTimeSetupWindow.ShowSetupWindow();
