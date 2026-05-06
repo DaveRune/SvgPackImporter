@@ -13,7 +13,7 @@ namespace KnightForge.IconImporter.Providers
 
         [HideInInspector] [SerializeField] private string _stableId;
 
-        [SerializeField] protected string _svgRootFolder = "My Local Icons";
+        [SerializeField] protected string svgRootFolder = "My Local Icons";
         [SerializeField] private List<string> _variants = new();
 
         public string StableId => _stableId;
@@ -42,7 +42,7 @@ namespace KnightForge.IconImporter.Providers
         public string GetRootPath()
         {
             var projectPath = Path.GetDirectoryName(Application.dataPath);
-            return Path.Combine(projectPath, ProvidersRoot, _svgRootFolder);
+            return Path.Combine(projectPath, ProvidersRoot, svgRootFolder);
         }
 
         public int GetDensity(int targetSize, string variant)

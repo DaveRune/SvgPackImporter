@@ -28,7 +28,7 @@ namespace KnightForge.IconImporter.Providers
         {
             base.Reset();
             _repoUrl = DefaultRepoUrl;
-            _svgRootFolder = DefaultSvgRootFolder;
+            svgRootFolder = DefaultSvgRootFolder;
             _version = "latest";
         }
 

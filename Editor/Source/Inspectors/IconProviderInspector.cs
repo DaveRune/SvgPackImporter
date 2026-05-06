@@ -72,7 +72,7 @@ namespace KnightForge.IconImporter.Editor.Inspectors
 
         protected void DrawSvgRootFolder()
         {
-            var svgRootProp = serializedObject.FindProperty("_svgRootFolder");
+            var svgRootProp = serializedObject.FindProperty("svgRootFolder");
             var projectPath = Path.GetDirectoryName(Application.dataPath) ?? "";
             var fullPath = Path.Combine(projectPath, "IconProviders", svgRootProp.stringValue);
             var exists = Directory.Exists(fullPath);
@@ -96,7 +96,7 @@ namespace KnightForge.IconImporter.Editor.Inspectors
             EditorGUILayout.LabelField("Variants", EditorStyles.boldLabel);
 
             var variantsProp = serializedObject.FindProperty("_variants");
-            var svgRoot = serializedObject.FindProperty("_svgRootFolder").stringValue;
+            var svgRoot = serializedObject.FindProperty("svgRootFolder").stringValue;
             var projectPath = Path.GetDirectoryName(Application.dataPath) ?? "";
             var rootPath = Path.Combine(projectPath, "IconProviders", svgRoot);
 
