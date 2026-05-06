@@ -224,21 +224,24 @@ namespace KnightForge.IconImporter.Editor.Inspectors
         private static IEnumerator DownloadAndExtract(string downloadUrl, string destPath, RepoIconProvider provider, Action<bool> callback)
         {
             var tempZip = Path.Combine(Path.GetDirectoryName(destPath), $"{provider.name}_temp.zip");
+            Directory.CreateDirectory(Path.GetDirectoryName(tempZip));
 
+            // Stream directly to disk via DownloadHandlerFile so the entire zip never sits in memory.
             using var request = UnityWebRequest.Get(downloadUrl);
+            request.downloadHandler = new DownloadHandlerFile(tempZip) { removeFileOnAbort = true };
             yield return request.SendWebRequest();
 
             if (request.result != UnityWebRequest.Result.Success)
             {
                 Debug.LogError($"Download failed: {request.error}");
+                if (File.Exists(tempZip))
+                    File.Delete(tempZip);
                 callback(false);
                 yield break;
             }
 
             try
             {
-                Directory.CreateDirectory(Path.GetDirectoryName(tempZip));
-                File.WriteAllBytes(tempZip, request.downloadHandler.data);
                 ExtractZip(tempZip, destPath, provider);
 
                 if (File.Exists(tempZip))
