@@ -198,27 +198,21 @@ namespace KnightForge.IconImporter.Editor.Inspectors
                 yield break;
             }
 
-            try
+            var release = JsonUtility.FromJson<GitHubRelease>(request.downloadHandler.text);
+            if (release == null || string.IsNullOrEmpty(release.tag_name))
             {
-                var json = request.downloadHandler.text;
-                var tagStart = json.IndexOf("\"tag_name\":\"", StringComparison.Ordinal);
-                if (tagStart < 0)
-                {
-                    Debug.LogError("tag_name not found in release response.");
-                    callback(null, null);
-                    yield break;
-                }
-
-                var tagValStart = tagStart + 12;
-                var tagValEnd = json.IndexOf("\"", tagValStart, StringComparison.Ordinal);
-                var tag = json.Substring(tagValStart, tagValEnd - tagValStart);
-                callback($"https://github.com/{slug}/archive/refs/tags/{tag}.zip", tag);
-            }
-            catch (Exception ex)
-            {
-                Debug.LogError($"Error parsing release response: {ex.Message}");
+                Debug.LogError("tag_name not found in release response.");
                 callback(null, null);
+                yield break;
             }
+
+            callback($"https://github.com/{slug}/archive/refs/tags/{release.tag_name}.zip", release.tag_name);
+        }
+
+        [Serializable]
+        private class GitHubRelease
+        {
+            public string tag_name;
         }
 
         private static IEnumerator DownloadAndExtract(string downloadUrl, string destPath, RepoIconProvider provider, Action<bool> callback)
