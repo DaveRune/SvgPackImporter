@@ -90,30 +90,6 @@ namespace KnightForge.IconImporter.Editor.Utilities
 #endif
         }
 
-        public static bool TryGeneratePreview(string svgPath, string outputPngPath, int size, int viewBoxSize = 24)
-        {
-            if (!TryDetectImageMagick(out var magickPath))
-                return false;
-
-            var tempSvgPath = outputPngPath + ".tmp.svg";
-            try
-            {
-                var content = File.ReadAllText(svgPath);
-                content = content.Replace("currentColor", "#FFFFFF");
-                content = Regex.Replace(content, @"stroke-width=""[^""]*""", @"stroke-width=""2""");
-                File.WriteAllText(tempSvgPath, content, Encoding.UTF8);
-
-                var density = Mathf.RoundToInt(size * 96f / viewBoxSize);
-                var args = $"-background none -density {density} \"{tempSvgPath}\" \"{outputPngPath}\"";
-                return ExecuteCommand(magickPath, args);
-            }
-            finally
-            {
-                if (File.Exists(tempSvgPath))
-                    File.Delete(tempSvgPath);
-            }
-        }
-
         public static bool TryGeneratePreviewFromContent(string svgPath, string outputPngPath, int size, IconProvider provider, string variant)
         {
             if (!TryDetectImageMagick(out var magickPath))
