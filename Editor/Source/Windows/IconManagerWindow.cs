@@ -532,9 +532,9 @@ namespace KnightForge.IconImporter.Editor.Windows
 
             switch (state)
             {
-                case IconCellState.Imported: DrawBorder(cellRect, UpdateColor, PreviewBorderWidth); break;
-                case IconCellState.PendingDeletion: DrawBorder(cellRect, DangerColor, PreviewBorderWidth); break;
-                case IconCellState.PendingAdd: DrawBorder(cellRect, PendingAddColor, PreviewBorderWidth); break;
+                case IconCellState.Imported: EditorGuiHelpers.DrawBorder(cellRect, UpdateColor, PreviewBorderWidth); break;
+                case IconCellState.PendingDeletion: EditorGuiHelpers.DrawBorder(cellRect, DangerColor, PreviewBorderWidth); break;
+                case IconCellState.PendingAdd: EditorGuiHelpers.DrawBorder(cellRect, PendingAddColor, PreviewBorderWidth); break;
             }
 
             // Track hover for the custom tooltip drawn at the end of OnGUI (window-space coordinates).
@@ -545,14 +545,6 @@ namespace KnightForge.IconImporter.Editor.Windows
             }
 
             return result;
-        }
-
-        private static void DrawBorder(Rect rect, Color color, int width)
-        {
-            EditorGUI.DrawRect(new Rect(rect.x, rect.y, rect.width, width), color);
-            EditorGUI.DrawRect(new Rect(rect.x, rect.yMax - width, rect.width, width), color);
-            EditorGUI.DrawRect(new Rect(rect.x, rect.y, width, rect.height), color);
-            EditorGUI.DrawRect(new Rect(rect.xMax - width, rect.y, width, rect.height), color);
         }
 
         // ── Hover tooltip ─────────────────────────────────────────────────────

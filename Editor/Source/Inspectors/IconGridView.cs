@@ -1,5 +1,6 @@
 using System;
 using System.IO;
+using KnightForge.IconImporter.Editor.Utilities;
 using UnityEditor;
 using UnityEngine;
 using Object = UnityEngine.Object;
@@ -91,7 +92,7 @@ namespace KnightForge.IconImporter.Editor.Inspectors
                         if (icon.texture)
                             GUI.DrawTexture(cellRect, icon.texture, ScaleMode.ScaleToFit, true);
                         if (_dragTarget == icon.sprite || _dragTarget == icon.texture)
-                            DrawBorder(cellRect, DragHighlightColor, BorderWidth);
+                            EditorGuiHelpers.DrawBorder(cellRect, DragHighlightColor, BorderWidth);
                         break;
 
                     case EventType.MouseDown when evt.button == 0 && isHover:
@@ -130,14 +131,6 @@ namespace KnightForge.IconImporter.Editor.Inspectors
             GUIUtility.hotControl = 0;
             _dragTarget = null;
             Event.current.Use();
-        }
-
-        private static void DrawBorder(Rect rect, Color color, int width)
-        {
-            EditorGUI.DrawRect(new Rect(rect.x, rect.y, rect.width, width), color);
-            EditorGUI.DrawRect(new Rect(rect.x, rect.yMax - width, rect.width, width), color);
-            EditorGUI.DrawRect(new Rect(rect.x, rect.y, width, rect.height), color);
-            EditorGUI.DrawRect(new Rect(rect.xMax - width, rect.y, width, rect.height), color);
         }
 
         private void EnsureStyles()
