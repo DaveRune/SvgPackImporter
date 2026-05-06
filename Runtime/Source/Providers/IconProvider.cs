@@ -51,10 +51,10 @@ namespace KnightForge.IconImporter.Providers
             return Mathf.RoundToInt(targetSize * 96f / vb.x);
         }
 
-        public virtual string PreprocessSvg(string content, string variant, string colourHex, float strokeWidth)
+        public virtual string PreprocessSvg(string content, string variant, string colorHex, float strokeWidth)
         {
             content = EnsureExplicitDimensions(content, GetViewBoxSizeForVariant(variant));
-            return content.Replace("currentColor", colourHex);
+            return content.Replace("currentColor", colorHex);
         }
 
         public IconManifest LoadManifest()

@@ -32,10 +32,10 @@ namespace KnightForge.IconImporter.Providers
             _version = "latest";
         }
 
-        public override string PreprocessSvg(string content, string variant, string colourHex, float strokeWidth)
+        public override string PreprocessSvg(string content, string variant, string colorHex, float strokeWidth)
         {
             var vb = GetViewBoxSizeForVariant(variant);
-            var result = base.PreprocessSvg(content, variant, colourHex, strokeWidth);
+            var result = base.PreprocessSvg(content, variant, colorHex, strokeWidth);
 
             if (!VariantPaths.TryGetValue(variant, out var descriptor) || descriptor.Style != IconStyle.Stroke)
                 return result;
