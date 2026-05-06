@@ -79,28 +79,27 @@ namespace KnightForge.IconImporter.Editor.Utilities
                 yield break;
             }
 
-            // Cache existing subassets by name so we can update them in-place and preserve Unity local
-            // file IDs - this keeps references from UI Image components intact across re-imports.
-            var existingTextures = new Dictionary<string, Texture2D>();
-            var existingSprites = new Dictionary<string, Sprite>();
-
-            foreach (var asset in AssetDatabase.LoadAllAssetsAtPath(assetPath))
-                switch (asset)
-                {
-                    case Texture2D texture:
-                        existingTextures[texture.name] = texture;
-                        break;
-                    case Sprite sprite:
-                        existingSprites[sprite.name] = sprite;
-                        break;
-                }
-
             // Snapshot current pack entries before clearing, so we can re-add any icons
             // whose source SVG was missing and were excluded from selectedIcons.
             var originalPackedIcons = targetPack.Icons.ToList();
 
-            var selectedAssetNames = new HashSet<string>(
-                selectedIcons.Select(i => IconNaming.AssetName(i.provider, i.iconName, i.variant)));
+            // Cache existing subassets by their rename-invariant StableKey, derived from each
+            // PackedIcon's provider/iconName/variant. Looking up by texture.name would break
+            // when a provider asset is renamed; the stable key survives renames so we can
+            // update textures and sprites in-place and preserve Unity local file IDs.
+            var existingTextures = new Dictionary<string, Texture2D>();
+            var existingSprites = new Dictionary<string, Sprite>();
+
+            foreach (var packed in originalPackedIcons)
+            {
+                if (!packed.provider) continue;
+                var key = IconNaming.StableKey(packed.provider, packed.iconName, packed.variant);
+                if (packed.texture) existingTextures[key] = packed.texture;
+                if (packed.sprite) existingSprites[key] = packed.sprite;
+            }
+
+            var selectedStableKeys = new HashSet<string>(
+                selectedIcons.Select(i => IconNaming.StableKey(i.provider, i.iconName, i.variant)));
 
             var keepAssets = new HashSet<Object> { targetPack };
             targetPack.Icons.Clear();
@@ -110,6 +109,7 @@ namespace KnightForge.IconImporter.Editor.Utilities
             foreach (var selected in selectedIcons)
             {
                 var assetName = IconNaming.AssetName(selected.provider, selected.iconName, selected.variant);
+                var stableKey = IconNaming.StableKey(selected.provider, selected.iconName, selected.variant);
                 var pngPath = Path.Combine(outputFolder, $"{assetName}.png");
 
                 if (!File.Exists(pngPath))
@@ -121,10 +121,12 @@ namespace KnightForge.IconImporter.Editor.Utilities
                 var bytes = File.ReadAllBytes(pngPath);
 
                 Texture2D texture;
-                if (existingTextures.TryGetValue(assetName, out var existingTex))
+                if (existingTextures.TryGetValue(stableKey, out var existingTex))
                 {
                     texture = existingTex;
                     texture.LoadImage(bytes);
+                    if (texture.name != assetName)
+                        texture.name = assetName;
                 }
                 else
                 {
@@ -148,7 +150,7 @@ namespace KnightForge.IconImporter.Editor.Utilities
                 texture.hideFlags = HideFlags.HideInHierarchy;
                 keepAssets.Add(texture);
 
-                existingSprites.TryGetValue(assetName, out var existingSprite);
+                existingSprites.TryGetValue(stableKey, out var existingSprite);
                 var rectMatches = existingSprite
                                   && (int)existingSprite.rect.width == texture.width
                                   && (int)existingSprite.rect.height == texture.height;
@@ -157,6 +159,8 @@ namespace KnightForge.IconImporter.Editor.Utilities
                 if (rectMatches)
                 {
                     sprite = existingSprite;
+                    if (sprite.name != assetName)
+                        sprite.name = assetName;
                 }
                 else
                 {
@@ -172,6 +176,7 @@ namespace KnightForge.IconImporter.Editor.Utilities
                         EditorUtility.CopySerialized(newSprite, existingSprite);
                         Object.DestroyImmediate(newSprite);
                         sprite = existingSprite;
+                        sprite.name = assetName;
                     }
                     else
                     {
@@ -200,8 +205,8 @@ namespace KnightForge.IconImporter.Editor.Utilities
             foreach (var original in originalPackedIcons)
             {
                 if (!original.provider) continue;
-                var aName = IconNaming.AssetName(original.provider, original.iconName, original.variant);
-                if (selectedAssetNames.Contains(aName)) continue;
+                var stableKey = IconNaming.StableKey(original.provider, original.iconName, original.variant);
+                if (selectedStableKeys.Contains(stableKey)) continue;
 
                 if (original.texture) keepAssets.Add(original.texture);
                 if (original.sprite) keepAssets.Add(original.sprite);
