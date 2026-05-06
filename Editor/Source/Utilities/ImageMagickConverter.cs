@@ -5,6 +5,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Text;
 using System.Text.RegularExpressions;
+using KnightForge.IconImporter.Editor.Data;
 using KnightForge.IconImporter.Providers;
 using UnityEditor;
 using UnityEngine;
@@ -17,6 +18,15 @@ namespace KnightForge.IconImporter.Editor.Utilities
         public static bool TryDetectImageMagick(out string executablePath)
         {
             executablePath = "";
+
+            // Honour the path saved by the first-time setup wizard before scanning.
+            // Re-scanning is slow and ignores user-configured non-standard install locations.
+            var savedPath = IconImporterSettings.Instance.ImageMagickPath;
+            if (!string.IsNullOrEmpty(savedPath) && File.Exists(savedPath))
+            {
+                executablePath = savedPath;
+                return true;
+            }
 
 #if UNITY_EDITOR_WIN
             var fixedCandidates = new[]
