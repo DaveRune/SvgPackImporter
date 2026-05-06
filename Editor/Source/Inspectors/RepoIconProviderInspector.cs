@@ -11,7 +11,7 @@ using UnityEngine.Networking;
 namespace KnightForge.IconImporter.Editor.Inspectors
 {
     [CustomEditor(typeof(RepoIconProvider), true)]
-    public sealed class RepoIconProviderEditor : IconProviderEditor
+    public sealed class RepoIconProviderInspector : IconProviderInspector
     {
         private bool _isCheckingUpdate;
         private bool _isDownloading;
@@ -78,7 +78,7 @@ namespace KnightForge.IconImporter.Editor.Inspectors
             if (!string.IsNullOrEmpty(_progressMessage))
                 EditorGUILayout.HelpBox(_progressMessage, MessageType.None);
 
-            if (_manifest == null) return;
+            if (manifest == null) return;
 
             EditorGUILayout.Space(4);
             EditorGUI.BeginDisabledGroup(_isCheckingUpdate || _isDownloading);

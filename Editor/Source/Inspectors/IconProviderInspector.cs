@@ -6,15 +6,15 @@ using UnityEngine;
 namespace KnightForge.IconImporter.Editor.Inspectors
 {
     [CustomEditor(typeof(IconProvider), true)]
-    public class IconProviderEditor : UnityEditor.Editor
+    public class IconProviderInspector : UnityEditor.Editor
     {
-        protected IconManifest _manifest;
+        protected IconManifest manifest;
 
         protected virtual void OnEnable()
         {
             var provider = target as IconProvider;
             if (provider)
-                _manifest = provider.LoadManifest();
+                manifest = provider.LoadManifest();
         }
 
         public override void OnInspectorGUI()
@@ -57,17 +57,17 @@ namespace KnightForge.IconImporter.Editor.Inspectors
         {
             EditorGUILayout.Space(8);
 
-            var label = _manifest != null ? "Update Manifest" : "Build Manifest";
+            var label = manifest != null ? "Update Manifest" : "Build Manifest";
             if (GUILayout.Button(label, GUILayout.Height(28)))
             {
-                _manifest = provider.BuildManifest();
+                manifest = provider.BuildManifest();
                 Repaint();
             }
         }
 
         protected void LoadManifestStatus(IconProvider provider)
         {
-            _manifest = provider.LoadManifest();
+            manifest = provider.LoadManifest();
         }
 
         protected void DrawSvgRootFolder()
@@ -145,14 +145,14 @@ namespace KnightForge.IconImporter.Editor.Inspectors
             EditorGUILayout.Space(8);
             EditorGUILayout.LabelField("Status", EditorStyles.boldLabel);
 
-            if (_manifest != null && _manifest.icons != null)
+            if (manifest != null && manifest.icons != null)
             {
                 var okStyle = new GUIStyle(EditorStyles.label)
                 {
                     normal = { textColor = new Color(0.3f, 0.75f, 0.3f) },
                     fontStyle = FontStyle.Bold
                 };
-                EditorGUILayout.LabelField($"✓  {_manifest.icons.Count:N0} icons  ({_manifest.version})", okStyle);
+                EditorGUILayout.LabelField($"✓  {manifest.icons.Count:N0} icons  ({manifest.version})", okStyle);
             }
             else
             {
@@ -185,7 +185,7 @@ namespace KnightForge.IconImporter.Editor.Inspectors
             if (Directory.Exists(rootPath))
                 Directory.Delete(rootPath, true);
 
-            _manifest = null;
+            manifest = null;
             Repaint();
         }
 
