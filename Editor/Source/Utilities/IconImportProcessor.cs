@@ -17,7 +17,7 @@ namespace KnightForge.IconImporter.Editor.Utilities
         public static void StartUpdate(IconPack pack, object coroutineOwner, Action onComplete = null)
         {
             var settings = IconImporterSettings.Instance;
-            if (!settings.imageMagickDetected)
+            if (!settings.ImageMagickDetected)
             {
                 var installNow = EditorUtility.DisplayDialog(
                     "ImageMagick Not Found",

@@ -272,8 +272,8 @@ namespace KnightForge.IconImporter.Editor.Windows
             GUILayout.Label("Setup Complete!", EditorStyles.boldLabel);
             GUILayout.Space(8);
 
-            if (settings.imageMagickDetected)
-                GUILayout.Label($"✓  ImageMagick: {settings.imageMagickPath}", _okBoldStyle);
+            if (settings.ImageMagickDetected)
+                GUILayout.Label($"✓  ImageMagick: {settings.ImageMagickPath}", _okBoldStyle);
             else
                 GUILayout.Label("ImageMagick not configured. Set the path later via Tools > IconImporter > Setup.", _bodyStyle);
 
@@ -321,11 +321,11 @@ namespace KnightForge.IconImporter.Editor.Windows
 
             if (!string.IsNullOrEmpty(pathToSave) && File.Exists(pathToSave))
             {
-                settings.imageMagickPath = pathToSave;
-                settings.imageMagickDetected = true;
+                settings.ImageMagickPath = pathToSave;
+                settings.ImageMagickDetected = true;
             }
 
-            settings.hasCompletedSetup = true;
+            settings.HasCompletedSetup = true;
             IconImporterSettings.Save();
         }
 

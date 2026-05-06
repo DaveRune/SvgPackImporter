@@ -14,7 +14,7 @@ namespace KnightForge.IconImporter.Editor
 
         private static void CheckFirstTimeSetup()
         {
-            if (!IconImporterSettings.Instance.hasCompletedSetup)
+            if (!IconImporterSettings.Instance.HasCompletedSetup)
                 FirstTimeSetupWindow.ShowSetupWindow();
         }
     }

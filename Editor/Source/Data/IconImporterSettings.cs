@@ -12,9 +12,27 @@ namespace KnightForge.IconImporter.Editor.Data
         private const string SettingsPath = "ProjectSettings/IconImporterSettings.asset";
         private static IconImporterSettings _instance;
 
-        public string imageMagickPath = "";
-        public bool imageMagickDetected;
-        public bool hasCompletedSetup;
+        [SerializeField] private string _imageMagickPath = "";
+        [SerializeField] private bool _imageMagickDetected;
+        [SerializeField] private bool _hasCompletedSetup;
+
+        public string ImageMagickPath
+        {
+            get => _imageMagickPath;
+            set => _imageMagickPath = value;
+        }
+
+        public bool ImageMagickDetected
+        {
+            get => _imageMagickDetected;
+            set => _imageMagickDetected = value;
+        }
+
+        public bool HasCompletedSetup
+        {
+            get => _hasCompletedSetup;
+            set => _hasCompletedSetup = value;
+        }
 
         public static IconImporterSettings Instance
         {
