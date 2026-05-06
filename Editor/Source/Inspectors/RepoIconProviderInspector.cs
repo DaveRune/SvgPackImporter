@@ -262,7 +262,9 @@ namespace KnightForge.IconImporter.Editor.Inspectors
             {
                 foreach (var (variantName, descriptor) in provider.VariantPaths)
                 {
-                    if (!entry.FullName.Contains(descriptor.Path) || !entry.FullName.EndsWith(".svg"))
+                    // Anchor on a leading '/' so a descriptor path like "icons/" only matches a real
+                    // folder boundary and not unrelated entries like "more-icons/".
+                    if (!entry.FullName.Contains($"/{descriptor.Path}") || !entry.FullName.EndsWith(".svg"))
                         continue;
 
                     var dest = Path.Combine(destPath, variantName, Path.GetFileName(entry.FullName));
