@@ -10,6 +10,7 @@ namespace KnightForge.IconImporter.Providers
     public abstract class IconProvider : ScriptableObject
     {
         private const string ProvidersRoot = "IconProviders";
+        internal const float SvgBaseDpi = 96f;
 
         [HideInInspector] [SerializeField] private string _stableId;
 
@@ -54,7 +55,7 @@ namespace KnightForge.IconImporter.Providers
         public int GetDensity(int targetSize, string variant)
         {
             var vb = GetViewBoxSizeForVariant(variant);
-            return Mathf.RoundToInt(targetSize * 96f / vb.x);
+            return Mathf.RoundToInt(targetSize * SvgBaseDpi / vb.x);
         }
 
         public virtual string PreprocessSvg(string content, string variant, string colorHex, float strokeWidth)

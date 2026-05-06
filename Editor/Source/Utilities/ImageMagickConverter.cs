@@ -185,14 +185,10 @@ namespace KnightForge.IconImporter.Editor.Utilities
 
                 var tempSvgPath = Path.Combine(tempFolder, pngName.Replace(".png", "_temp.svg"));
                 var svgContent = File.ReadAllText(svgPath);
-                var processedContent = icon.provider != null
-                    ? icon.provider.PreprocessSvg(svgContent, icon.variant, colorHex, strokeWidth)
-                    : svgContent.Replace("currentColor", colorHex);
+                var processedContent = icon.provider.PreprocessSvg(svgContent, icon.variant, colorHex, strokeWidth);
                 File.WriteAllText(tempSvgPath, processedContent, Encoding.UTF8);
 
-                var density = icon.provider != null
-                    ? icon.provider.GetDensity(size, icon.variant)
-                    : Mathf.RoundToInt(size * 96f / 24);
+                var density = icon.provider.GetDensity(size, icon.variant);
                 var args = $"-background none -density {density} \"{tempSvgPath}\" \"{pngPath}\"";
 
                 if (ExecuteCommand(convertPath, args))
