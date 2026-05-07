@@ -3,9 +3,7 @@ using UnityEngine;
 
 namespace KnightForge.SvgPackImporter.Data
 {
-    /// Editor-only project settings persisted to the ProjectSettings folder so they do not
-    /// ship with player builds and do not force consumers to create an Assets/Resources folder.
-    [Icon("Packages/com.knightforge.svgpackimporter/Editor/Icons/SvgPackImporterSettings.png")]
+    /// Editor-only project settings persisted in the ProjectSettings folder
     internal sealed class SvgPackImporterSettings : ScriptableObject
     {
         private const string SettingsPath = "ProjectSettings/SvgPackImporterSettings.asset";
