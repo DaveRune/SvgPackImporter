@@ -26,9 +26,9 @@ namespace KnightForge.IconImporter
         public int IconSize => _iconSize;
         public List<string> ActiveVariants => _activeVariants;
 
-        internal void ClearIcons() => _icons.Clear();
-        internal void AddIcon(PackedIcon icon) => _icons.Add(icon);
-        internal int RemoveIconsWhere(Predicate<PackedIcon> predicate) => _icons.RemoveAll(predicate);
+        public void ClearIcons() => _icons.Clear();
+        public void AddIcon(PackedIcon icon) => _icons.Add(icon);
+        public int RemoveIconsWhere(Predicate<PackedIcon> predicate) => _icons.RemoveAll(predicate);
 
         [Serializable]
         public class PackedIcon
