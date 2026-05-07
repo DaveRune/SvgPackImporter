@@ -17,12 +17,16 @@ namespace KnightForge.IconImporter.Editor.Inspectors
 
         private GUIStyle _okStyle;
         private GUIStyle _variantPrefixStyle;
+        private string _lastLoadedManifestRootFolder;
 
         protected virtual void OnEnable()
         {
             var provider = target as IconProvider;
             if (provider)
+            {
                 manifest = provider.LoadManifest();
+                _lastLoadedManifestRootFolder = serializedObject.FindProperty("svgRootFolder").stringValue;
+            }
         }
 
         public override void OnInspectorGUI()
@@ -31,6 +35,16 @@ namespace KnightForge.IconImporter.Editor.Inspectors
             EnsureStyles();
 
             var provider = (IconProvider)target;
+
+            // Reload the manifest if svgRootFolder has changed since we last loaded it. Without
+            // this the inspector keeps showing the previous folder's "tick + icon count" until
+            // the user clicks away and back, which triggers OnEnable.
+            var currentSvgRoot = serializedObject.FindProperty("svgRootFolder").stringValue;
+            if (currentSvgRoot != _lastLoadedManifestRootFolder)
+            {
+                manifest = provider.LoadManifest();
+                _lastLoadedManifestRootFolder = currentSvgRoot;
+            }
 
             DrawProviderHeader();
             DrawCoreFields();
