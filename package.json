@@ -1,6 +1,6 @@
 {
   "name": "com.knightforge.svgpackimporter",
-  "version": "0.0.0",
+  "version": "1.0.0",
   "displayName": "SvgPackImporter",
   "description": "Import and manage SVG icon packs in Unity",
   "unity": "2022.3",

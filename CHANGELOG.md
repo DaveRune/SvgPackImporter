@@ -1,9 +1,10 @@
 # Changelog
 
-## [0.0.1] - 2026-01-02
-### Added
-- Empty Changelog file - Use this style as a template and delete the contents.
+## [1.0.0] - 2026-05-07
 
-## [0.0.0] - 2026-01-01
+Initial Release. Windows OS only.
+
 ### Added
-- Empty Changelog file - Use this style as a template and delete the contents.
+- Add Icon Providers
+- Add Icon Packs
+- Add first time setup process
