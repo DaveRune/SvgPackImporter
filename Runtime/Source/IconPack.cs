@@ -6,7 +6,7 @@ using UnityEngine;
 
 namespace KnightForge.SvgPackImporter
 {
-    [Icon("Packages/com.KnightForge.SvgPackImporter/Editor/Icons/IconPack.png")]
+    [Icon("Packages/com.knightforge.svgpackimporter/Editor/Icons/IconPack.png")]
     [CreateAssetMenu(fileName = "Icon Pack", menuName = IconImporterConstants.IconPack, order = -1)]
     public sealed class IconPack : ScriptableObject
     {

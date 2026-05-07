@@ -6,7 +6,7 @@ using UnityEngine;
 
 namespace KnightForge.SvgPackImporter.Providers
 {
-    [Icon("Packages/com.KnightForge.SvgPackImporter/Editor/Icons/IconProvider.png")]
+    [Icon("Packages/com.knightforge.svgpackimporter/Editor/Icons/IconProvider.png")]
     public abstract class IconProvider : ScriptableObject
     {
         private const string ProvidersRoot = "IconProviders";
