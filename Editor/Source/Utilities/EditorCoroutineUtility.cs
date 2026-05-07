@@ -1,4 +1,4 @@
-﻿using System.Collections;
+using System.Collections;
 
 namespace KnightForge.IconImporter.Editor.Utilities
 {
@@ -6,7 +6,7 @@ namespace KnightForge.IconImporter.Editor.Utilities
     {
         public static EditorCoroutine StartCoroutine(IEnumerator routine, object owner)
         {
-            return new EditorCoroutine(routine);
+            return new EditorCoroutine(routine, owner);
         }
     }
 }
