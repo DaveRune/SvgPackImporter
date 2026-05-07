@@ -202,7 +202,7 @@ namespace KnightForge.SvgPackImporter.Inspectors
                 : $"https://api.github.com/repos/{slug}/releases/tags/{provider.Version}";
 
             using var request = UnityWebRequest.Get(apiUrl);
-            request.SetRequestHeader("User-Agent", "Unity-IconImporter");
+            request.SetRequestHeader("User-Agent", "Unity-SvgPackImporter");
             yield return request.SendWebRequest();
 
             if (request.result != UnityWebRequest.Result.Success)

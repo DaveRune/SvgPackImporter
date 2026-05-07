@@ -169,7 +169,7 @@ namespace KnightForge.SvgPackImporter.Utilities
 
             Directory.CreateDirectory(outputFolder);
 
-            var tempFolder = Path.Combine(Path.GetTempPath(), "IconImporterTemp");
+            var tempFolder = Path.Combine(Path.GetTempPath(), "SvgPackImporterTemp");
             Directory.CreateDirectory(tempFolder);
 
             var colorHex = ColorToHex(color);
