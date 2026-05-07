@@ -48,8 +48,16 @@ namespace KnightForge.IconImporter.Providers
 
         public string GetRootPath()
         {
+            return Path.Combine(GetProvidersRoot(), svgRootFolder);
+        }
+
+        /// Project-relative root that holds every provider's SVG folder. Exposed so editor-side
+        /// inspector code can compute paths from a SerializedProperty live value without
+        /// hardcoding the "IconProviders" segment.
+        public static string GetProvidersRoot()
+        {
             var projectPath = Path.GetDirectoryName(Application.dataPath);
-            return Path.Combine(projectPath, ProvidersRoot, svgRootFolder);
+            return Path.Combine(projectPath, ProvidersRoot);
         }
 
         public int GetDensity(int targetSize, string variant)

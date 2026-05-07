@@ -81,8 +81,8 @@ namespace KnightForge.IconImporter.Editor.Inspectors
         protected void DrawSvgRootFolder()
         {
             var svgRootProp = serializedObject.FindProperty("svgRootFolder");
-            var projectPath = Path.GetDirectoryName(Application.dataPath) ?? "";
-            var fullPath = Path.Combine(projectPath, "IconProviders", svgRootProp.stringValue);
+            var providersRoot = IconProvider.GetProvidersRoot();
+            var fullPath = Path.Combine(providersRoot, svgRootProp.stringValue);
             var exists = Directory.Exists(fullPath);
 
             EditorGUILayout.BeginHorizontal();
@@ -95,8 +95,8 @@ namespace KnightForge.IconImporter.Editor.Inspectors
 
             EditorGUILayout.EndHorizontal();
 
-            var projectName = Path.GetFileName(projectPath);
-            EditorGUILayout.LabelField($"{projectName}/IconProviders/{svgRootProp.stringValue}", EditorStyles.helpBox);
+            var projectName = Path.GetFileName(Path.GetDirectoryName(providersRoot));
+            EditorGUILayout.LabelField($"{projectName}/{Path.GetFileName(providersRoot)}/{svgRootProp.stringValue}", EditorStyles.helpBox);
         }
 
         private void DrawVariantsList()
@@ -105,8 +105,7 @@ namespace KnightForge.IconImporter.Editor.Inspectors
 
             var variantsProp = serializedObject.FindProperty("_variants");
             var svgRoot = serializedObject.FindProperty("svgRootFolder").stringValue;
-            var projectPath = Path.GetDirectoryName(Application.dataPath) ?? "";
-            var rootPath = Path.Combine(projectPath, "IconProviders", svgRoot);
+            var rootPath = Path.Combine(IconProvider.GetProvidersRoot(), svgRoot);
 
             var prefixText = $"{svgRoot}/";
             var prefixWidth = _variantPrefixStyle.CalcSize(new GUIContent(prefixText)).x;
