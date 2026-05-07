@@ -100,6 +100,7 @@ namespace KnightForge.SvgPackImporter.Utilities
                 "/opt/homebrew/bin/magick",
                 "/usr/local/bin/convert",
                 "/opt/homebrew/bin/convert"
+                "/opt/homebrew/opt/imagemagick"
             };
 
             foreach (var candidate in candidates)
