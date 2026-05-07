@@ -10,7 +10,7 @@ Bring SVG icon packs into Unity, manage them visually, and render them as PNG sp
 
 SvgPackImporter has three pieces. Providers know where SVGs come from. Built-in providers point at a GitHub repo and download on demand. Local providers point at any folder on your disk.
 
-Icon Packs pick a subset of icons from one or more providers and embed them as PNG subassets at a chosen size, color, and stroke width. Drag the resulting sprite or texture onto a UI Image, or reference it in code.
+Icon Packs pick a subset of icons from one or more providers and embed them as PNG subassets at a chosen size, color, and stroke width. Drag the resulting sprite or texture onto a UI Image.
 
 The Icon Manager window is where you browse a provider's full catalogue, search by name or alias, and toggle which icons are included in a pack.
 
