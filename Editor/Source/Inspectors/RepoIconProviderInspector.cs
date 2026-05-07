@@ -78,16 +78,34 @@ namespace KnightForge.IconImporter.Editor.Inspectors
             if (!string.IsNullOrEmpty(_progressMessage))
                 EditorGUILayout.HelpBox(_progressMessage, MessageType.None);
 
-            if (manifest == null) return;
+            if (manifest != null)
+            {
+                EditorGUILayout.Space(4);
+                EditorGUI.BeginDisabledGroup(_isCheckingUpdate || _isDownloading);
+                if (GUILayout.Button(_isCheckingUpdate ? "Checking..." : "Check for Updates", GUILayout.Height(26)))
+                    OnCheckForUpdatesClicked(repoProvider);
+                EditorGUI.EndDisabledGroup();
 
-            EditorGUILayout.Space(4);
-            EditorGUI.BeginDisabledGroup(_isCheckingUpdate || _isDownloading);
-            if (GUILayout.Button(_isCheckingUpdate ? "Checking..." : "Check for Updates", GUILayout.Height(26)))
-                OnCheckForUpdatesClicked(repoProvider);
-            EditorGUI.EndDisabledGroup();
+                if (!string.IsNullOrEmpty(_updateCheckResult))
+                    EditorGUILayout.HelpBox(_updateCheckResult, MessageType.None);
+            }
 
-            if (!string.IsNullOrEmpty(_updateCheckResult))
-                EditorGUILayout.HelpBox(_updateCheckResult, MessageType.None);
+            // Recovery path when SVGs exist on disk but the manifest is missing or out of date —
+            // for example after deleting the manifest, restoring files from version control, or
+            // adding extra SVGs to a downloaded repo by hand. Rebuilds the manifest from whatever
+            // is present without re-downloading.
+            if (Directory.Exists(repoProvider.GetRootPath()))
+            {
+                EditorGUILayout.Space(4);
+                EditorGUI.BeginDisabledGroup(_isDownloading || _isCheckingUpdate);
+                if (GUILayout.Button("Rebuild Manifest from Disk", GUILayout.Height(26)))
+                {
+                    repoProvider.BuildManifest();
+                    LoadManifestStatus(repoProvider);
+                    Repaint();
+                }
+                EditorGUI.EndDisabledGroup();
+            }
         }
 
         protected override void DrawRemoveButton(IconProvider provider)
