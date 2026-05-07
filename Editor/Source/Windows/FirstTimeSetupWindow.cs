@@ -242,6 +242,8 @@ namespace KnightForge.SvgPackImporter.Windows
         private void DrawProvidersStep()
         {
             GUILayout.Space(10);
+            GUILayout.Label("Optional", EditorStyles.boldLabel);
+            GUILayout.Space(10);
             GUILayout.Label("Built-in Icon Providers", EditorStyles.boldLabel);
             GUILayout.Label(
                 "Download built-in providers to your project. Each downloads SVG files from GitHub " +
@@ -567,33 +569,37 @@ namespace KnightForge.SvgPackImporter.Windows
 
             DrawFlowArrow();
 
-            var providerState = GetProviderSetupState();
+            IconProvider downloadedProvider = null;
+            IconProvider anyProvider = null;
+            foreach (var guid in AssetDatabase.FindAssets("t:IconProvider"))
+            {
+                var candidate = AssetDatabase.LoadAssetAtPath<IconProvider>(AssetDatabase.GUIDToAssetPath(guid));
+                if (!candidate) continue;
+                anyProvider ??= candidate;
+                if (!downloadedProvider && candidate.LoadManifest() != null)
+                    downloadedProvider = candidate;
+            }
+
+            var providerState = downloadedProvider ? ProviderSetupStateType.Downloaded
+                : anyProvider ? ProviderSetupStateType.AssetOnly
+                : ProviderSetupStateType.None;
+
             switch (providerState)
             {
                 case ProviderSetupStateType.Downloaded:
-                {
-                    var guid = AssetDatabase.FindAssets("t:IconProvider")[0];
-                    var provider = AssetDatabase.LoadAssetAtPath<IconProvider>(AssetDatabase.GUIDToAssetPath(guid));
                     DrawStatusButton("Icon Provider Ready", _statusGreenStyle, () =>
                     {
-                        if (!provider) return;
-                        EditorGUIUtility.PingObject(provider);
-                        Selection.activeObject = provider;
+                        EditorGUIUtility.PingObject(downloadedProvider);
+                        Selection.activeObject = downloadedProvider;
                     });
                     break;
-                }
                 case ProviderSetupStateType.AssetOnly:
-                {
-                    var guid = AssetDatabase.FindAssets("t:IconProvider")[0];
-                    var provider = AssetDatabase.LoadAssetAtPath<IconProvider>(AssetDatabase.GUIDToAssetPath(guid));
-                    DrawStatusButton("Icon Provider Not Downloaded", _statusYellowStyle, () =>
+                    DrawStatusButton("Icon Provider has no icons", _statusYellowStyle, () =>
                     {
-                        if (!provider) return;
-                        EditorGUIUtility.PingObject(provider);
-                        Selection.activeObject = provider;
+                        EditorGUIUtility.PingObject(anyProvider);
+                        Selection.activeObject = anyProvider;
                     });
                     break;
-                }
                 case ProviderSetupStateType.None:
                     DrawStatusButton("No Icon Provider Created", _statusRedStyle, () => _currentStep = 2);
                     break;
@@ -641,33 +647,18 @@ namespace KnightForge.SvgPackImporter.Windows
             GUILayout.EndHorizontal();
         }
 
-        private static ProviderSetupStateType GetProviderSetupState()
-        {
-            var guids = AssetDatabase.FindAssets("t:IconProvider");
-            if (guids.Length == 0)
-                return ProviderSetupStateType.None;
-
-            foreach (var guid in guids)
-            {
-                var provider = AssetDatabase.LoadAssetAtPath<IconProvider>(AssetDatabase.GUIDToAssetPath(guid));
-                if (!provider) continue;
-                if (provider.LoadManifest() != null)
-                    return ProviderSetupStateType.Downloaded;
-            }
-
-            return ProviderSetupStateType.AssetOnly;
-        }
 
         private string GetRepoUrl<T>() where T : RepoIconProvider
         {
             var type = typeof(T);
-            if (!_repoUrlCache.TryGetValue(type, out var url))
-            {
-                var instance = CreateInstance<T>();
-                url = instance.DefaultRepoUrl;
-                DestroyImmediate(instance);
-                _repoUrlCache[type] = url;
-            }
+
+            if (_repoUrlCache.TryGetValue(type, out var url))
+                return url;
+            
+            var instance = CreateInstance<T>();
+            url = instance.DefaultRepoUrl;
+            DestroyImmediate(instance);
+            _repoUrlCache[type] = url;
 
             return url;
         }
