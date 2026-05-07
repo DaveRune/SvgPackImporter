@@ -56,7 +56,7 @@ namespace KnightForge.SvgPackImporter.Windows
 
         public static void ShowSetupWindow()
         {
-            var window = GetWindow<FirstTimeSetupWindow>(true, "IconImporter Setup", true);
+            var window = GetWindow<FirstTimeSetupWindow>(true, "SvgPackImporter Setup", true);
             window.minSize = new Vector2(500, 400);
             window.maxSize = new Vector2(500, 400);
             window.ShowUtility();
@@ -67,7 +67,7 @@ namespace KnightForge.SvgPackImporter.Windows
         private void DrawHeader()
         {
             GUILayout.Space(10);
-            GUILayout.Label("IconImporter  -  First Time Setup", _headerStyle);
+            GUILayout.Label("SvgPackImporter  -  First Time Setup", _headerStyle);
             GUILayout.Space(6);
         }
 
@@ -96,7 +96,7 @@ namespace KnightForge.SvgPackImporter.Windows
         private void DrawWelcomeStep()
         {
             GUILayout.Space(16);
-            GUILayout.Label("Welcome to IconImporter!", EditorStyles.boldLabel);
+            GUILayout.Label("Welcome to SvgPackImporter!", EditorStyles.boldLabel);
             GUILayout.Space(8);
             GUILayout.Label(
                 "This tool lets you import SVG icon packs into Unity, preview them, and batch-convert " +
@@ -275,13 +275,13 @@ namespace KnightForge.SvgPackImporter.Windows
             if (settings.ImageMagickDetected)
                 GUILayout.Label($"✓  ImageMagick: {settings.ImageMagickPath}", _okBoldStyle);
             else
-                GUILayout.Label("ImageMagick not configured. Set the path later via Tools > IconImporter > Setup.", _bodyStyle);
+                GUILayout.Label("ImageMagick not configured. Set the path later via Tools > SvgPackImporter > Setup.", _bodyStyle);
 
             GUILayout.Space(10);
             GUILayout.Label(
                 "To get started:\n" +
                 "• Select a provider asset and click 'Download and Setup'\n" +
-                "• Right-click in the Project window and choose Create > IconImporter > Icon Pack\n" +
+                "• Right-click in the Project window and choose Create > SvgPackImporter > Icon Pack\n" +
                 "• Assign your provider to the pack and click 'Manage Icons'",
                 _bodyStyle);
 
