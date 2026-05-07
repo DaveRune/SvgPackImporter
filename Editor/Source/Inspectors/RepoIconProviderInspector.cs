@@ -71,7 +71,7 @@ namespace KnightForge.SvgPackImporter.Inspectors
             EditorGUI.EndDisabledGroup();
 
             EditorGUILayout.HelpBox(
-                "Downloads the icon pack from GitHub and extracts SVG files to an \"IconImporter\" folder in the project root. " +
+                "Downloads the icon pack from GitHub and extracts SVG files to an \"IconProviders\" folder in the project root. " +
                 "Run this when setting up or upgrading to a new version.",
                 MessageType.Info);
 
