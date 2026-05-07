@@ -16,6 +16,8 @@ The Icon Manager window is where you browse a provider's full catalogue, search 
 
 Conversion uses ImageMagick under the hood, so it's a one-time install on your machine.
 
+<img width="1488" height="1000" alt="image" src="https://media.githubusercontent.com/media/DaveRune/SvgPackImporter/main/Readme%7E/Demo.gif" />
+
 ## Usage
 
 ### 1. Run First-Time Setup
