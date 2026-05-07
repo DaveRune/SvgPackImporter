@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.IO;
 using KnightForge.IconImporter.Providers;
 using UnityEditor;
@@ -90,7 +91,7 @@ namespace KnightForge.IconImporter.Editor.Inspectors
             if (GUILayout.Button(exists ? "Browse" : "Create", GUILayout.Width(60), GUILayout.Height(EditorGUIUtility.singleLineHeight)))
             {
                 Directory.CreateDirectory(fullPath);
-                EditorUtility.RevealInFinder(fullPath);
+                OpenFolder(fullPath);
             }
 
             EditorGUILayout.EndHorizontal();
@@ -124,7 +125,7 @@ namespace KnightForge.IconImporter.Editor.Inspectors
                 if (GUILayout.Button(exists ? "Browse" : "Create", GUILayout.Width(60), GUILayout.Height(EditorGUIUtility.singleLineHeight)))
                 {
                     Directory.CreateDirectory(variantPath);
-                    EditorUtility.RevealInFinder(variantPath);
+                    OpenFolder(variantPath);
                 }
 
                 if (GUILayout.Button("✕", GUILayout.Width(22), GUILayout.Height(EditorGUIUtility.singleLineHeight)))
@@ -192,6 +193,19 @@ namespace KnightForge.IconImporter.Editor.Inspectors
             "Any previously generated PNG textures will persist, but you will not be able to " +
             "import or update icons from this source until the files are restored.\n\n" +
             "This cannot be undone.";
+
+        // Opens the folder itself, not its parent. EditorUtility.RevealInFinder selects the
+        // folder in its parent which is the wrong UX for a "Browse" button.
+        private static void OpenFolder(string path)
+        {
+#if UNITY_EDITOR_WIN
+            Process.Start(new ProcessStartInfo("explorer.exe", $"\"{path}\"") { UseShellExecute = true });
+#elif UNITY_EDITOR_OSX
+            Process.Start("open", $"\"{path}\"");
+#else
+            Process.Start("xdg-open", $"\"{path}\"");
+#endif
+        }
 
         private void EnsureStyles()
         {
