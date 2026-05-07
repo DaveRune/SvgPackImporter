@@ -3,7 +3,7 @@ using UnityEngine;
 
 namespace KnightForge.IconImporter.Providers.BuiltIn
 {
-    [CreateAssetMenu(fileName = "HeroIcon", menuName = IconImporterConstants.IconProviders + "Heroicons", order = IconImporterConstants.IconProvidersBuiltIn)]
+    [CreateAssetMenu(fileName = "Heroicons", menuName = IconImporterConstants.IconProviders + "Heroicons", order = IconImporterConstants.IconProvidersBuiltIn)]
     public sealed class HeroIconProvider : RepoIconProvider
     {
         public override string DefaultRepoUrl => "https://github.com/tailwindlabs/heroicons";

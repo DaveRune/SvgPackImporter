@@ -3,7 +3,7 @@ using UnityEngine;
 
 namespace KnightForge.IconImporter.Providers.BuiltIn
 {
-    [CreateAssetMenu(fileName = "Iconoir", menuName = IconImporterConstants.IconProviders + "Iconoir", order = IconImporterConstants.IconProvidersBuiltIn)]
+    [CreateAssetMenu(fileName = "Iconoir Icons", menuName = IconImporterConstants.IconProviders + "Iconoir", order = IconImporterConstants.IconProvidersBuiltIn)]
     public sealed class IconoirIconProvider : RepoIconProvider
     {
         public override string DefaultRepoUrl => "https://github.com/iconoir-icons/iconoir";
