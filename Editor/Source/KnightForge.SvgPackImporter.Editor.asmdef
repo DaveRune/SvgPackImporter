@@ -1,6 +1,6 @@
 {
-  "name": "KnightForge.IconImporter.Editor",
-  "rootNamespace": "KnightForge.IconImporter",
+  "name": "KnightForge.SvgPackImporter.Editor",
+  "rootNamespace": "KnightForge.SvgPackImporter",
   "references": [
     "GUID:02dac9dfc960a7f4ab674e4c729101ae"
   ],

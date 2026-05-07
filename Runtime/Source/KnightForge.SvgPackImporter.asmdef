@@ -1,6 +1,6 @@
 {
-  "name": "KnightForge.IconImporter",
-  "rootNamespace": "KnightForge.IconImporter",
+  "name": "KnightForge.SvgPackImporter",
+  "rootNamespace": "KnightForge.SvgPackImporter",
   "references": [],
   "includePlatforms": [],
   "excludePlatforms": [],
