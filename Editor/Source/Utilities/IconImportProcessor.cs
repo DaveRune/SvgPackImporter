@@ -4,7 +4,6 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
-using KnightForge.IconImporter.Editor.Data;
 using UnityEditor;
 using UnityEngine;
 using Debug = UnityEngine.Debug;
@@ -16,8 +15,11 @@ namespace KnightForge.IconImporter.Editor.Utilities
     {
         public static void StartUpdate(IconPack pack, object coroutineOwner, Action onComplete = null)
         {
-            var settings = IconImporterSettings.Instance;
-            if (!settings.ImageMagickDetected)
+            // Re-detect on every Update click rather than trusting a stale flag — the user may have
+            // installed ImageMagick after first setup, or skipped the wizard entirely. Detection
+            // reads the saved path first then falls back to a platform scan, and persists any
+            // newly-found path so the next click is instant.
+            if (!ImageMagickConverter.TryDetectImageMagick(out _))
             {
                 var installNow = EditorUtility.DisplayDialog(
                     "ImageMagick Not Found",

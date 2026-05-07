@@ -35,6 +35,21 @@ namespace KnightForge.IconImporter.Editor.Utilities
             }
 
             var found = TryDetectInternal(out executablePath);
+
+            // If we discovered ImageMagick via fallback scan (not the saved path), persist it so
+            // future calls hit the saved-path branch immediately and so a subsequent Update click
+            // does not trigger another full scan.
+            if (found)
+            {
+                var settings = IconImporterSettings.Instance;
+                if (settings.ImageMagickPath != executablePath || !settings.ImageMagickDetected)
+                {
+                    settings.ImageMagickPath = executablePath;
+                    settings.ImageMagickDetected = true;
+                    IconImporterSettings.Save();
+                }
+            }
+
             _cachedExecutablePath = found ? executablePath : null;
             _cacheValid = true;
             return found;
