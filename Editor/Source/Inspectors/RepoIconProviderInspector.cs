@@ -2,13 +2,13 @@ using System;
 using System.Collections;
 using System.IO;
 using System.IO.Compression;
-using KnightForge.IconImporter.Editor.Utilities;
-using KnightForge.IconImporter.Providers;
+using KnightForge.SvgPackImporter.Editor.Utilities;
+using KnightForge.SvgPackImporter.Providers;
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.Networking;
 
-namespace KnightForge.IconImporter.Editor.Inspectors
+namespace KnightForge.SvgPackImporter.Editor.Inspectors
 {
     [CustomEditor(typeof(RepoIconProvider), true)]
     public sealed class RepoIconProviderInspector : IconProviderInspector

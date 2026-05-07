@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
 
-namespace KnightForge.IconImporter
+namespace KnightForge.SvgPackImporter
 {
     [Serializable]
     public class IconEntry

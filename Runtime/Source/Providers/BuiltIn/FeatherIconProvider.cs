@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-namespace KnightForge.IconImporter.Providers.BuiltIn
+namespace KnightForge.SvgPackImporter.Providers.BuiltIn
 {
     [CreateAssetMenu(fileName = "Feather Icons", menuName = IconImporterConstants.IconProviders + "Feather", order = IconImporterConstants.IconProvidersBuiltIn)]
     public sealed class FeatherIconProvider : RepoIconProvider

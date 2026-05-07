@@ -1,6 +1,6 @@
-using KnightForge.IconImporter.Providers;
+using KnightForge.SvgPackImporter.Providers;
 
-namespace KnightForge.IconImporter.Editor.Utilities
+namespace KnightForge.SvgPackImporter.Editor.Utilities
 {
     /// Single source of truth for asset names and dictionary keys derived from a provider/icon/variant tuple.
     internal static class IconNaming

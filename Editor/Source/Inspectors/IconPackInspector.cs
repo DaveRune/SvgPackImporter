@@ -1,11 +1,11 @@
 using System.Linq;
-using KnightForge.IconImporter.Editor.Utilities;
-using KnightForge.IconImporter.Editor.Windows;
-using KnightForge.IconImporter.Providers;
+using KnightForge.SvgPackImporter.Editor.Utilities;
+using KnightForge.SvgPackImporter.Editor.Windows;
+using KnightForge.SvgPackImporter.Providers;
 using UnityEditor;
 using UnityEngine;
 
-namespace KnightForge.IconImporter.Editor.Inspectors
+namespace KnightForge.SvgPackImporter.Editor.Inspectors
 {
     [CustomEditor(typeof(IconPack))]
     public sealed class IconPackInspector : UnityEditor.Editor

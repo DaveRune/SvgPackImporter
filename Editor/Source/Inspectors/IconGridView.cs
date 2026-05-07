@@ -1,10 +1,10 @@
 using System;
-using KnightForge.IconImporter.Editor.Utilities;
+using KnightForge.SvgPackImporter.Editor.Utilities;
 using UnityEditor;
 using UnityEngine;
 using Object = UnityEngine.Object;
 
-namespace KnightForge.IconImporter.Editor.Inspectors
+namespace KnightForge.SvgPackImporter.Editor.Inspectors
 {
     internal sealed class IconGridView
     {

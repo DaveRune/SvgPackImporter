@@ -1,4 +1,4 @@
-﻿namespace KnightForge.IconImporter
+﻿namespace KnightForge.SvgPackImporter
 {
     internal static class IconImporterConstants
     {

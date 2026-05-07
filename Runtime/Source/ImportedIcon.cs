@@ -1,7 +1,7 @@
 using System;
-using KnightForge.IconImporter.Providers;
+using KnightForge.SvgPackImporter.Providers;
 
-namespace KnightForge.IconImporter
+namespace KnightForge.SvgPackImporter
 {
     [Serializable]
     public sealed class ImportedIcon

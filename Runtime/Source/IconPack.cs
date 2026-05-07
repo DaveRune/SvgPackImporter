@@ -1,11 +1,12 @@
 using System;
 using System.Collections.Generic;
-using KnightForge.IconImporter.Providers;
+using JetBrains.Annotations;
+using KnightForge.SvgPackImporter.Providers;
 using UnityEngine;
 
-namespace KnightForge.IconImporter
+namespace KnightForge.SvgPackImporter
 {
-    [Icon("Packages/com.knightforge.iconimporter/Editor/Icons/IconPack.png")]
+    [Icon("Packages/com.KnightForge.SvgPackImporter/Editor/Icons/IconPack.png")]
     [CreateAssetMenu(fileName = "Icon Pack", menuName = IconImporterConstants.IconPack, order = -1)]
     public sealed class IconPack : ScriptableObject
     {
@@ -17,7 +18,7 @@ namespace KnightForge.IconImporter
         [SerializeField] private int _iconSize = 64;
 
         [HideInInspector] [SerializeField] private List<string> _activeVariants = new();
-        [HideInInspector] [SerializeField] private bool _dragAsSprite = true;
+        [HideInInspector] [SerializeField] [UsedImplicitly] private bool _dragAsSprite = true;
 
         public IReadOnlyList<PackedIcon> Icons => _icons;
         public IReadOnlyList<IconProvider> Providers => _providers;

@@ -3,7 +3,7 @@ using System.Linq;
 using System.Text.RegularExpressions;
 using UnityEngine;
 
-namespace KnightForge.IconImporter.Providers
+namespace KnightForge.SvgPackImporter.Providers
 {
     public abstract class RepoIconProvider : IconProvider
     {

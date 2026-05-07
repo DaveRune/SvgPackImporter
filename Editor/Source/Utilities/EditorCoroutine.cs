@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using UnityEditor;
 using UnityEngine;
 
-namespace KnightForge.IconImporter.Editor.Utilities
+namespace KnightForge.SvgPackImporter.Editor.Utilities
 {
     internal sealed class EditorCoroutine
     {

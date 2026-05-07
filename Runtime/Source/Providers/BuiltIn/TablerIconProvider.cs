@@ -3,9 +3,9 @@ using System.Collections.Generic;
 using System.IO;
 using UnityEngine;
 
-namespace KnightForge.IconImporter.Providers.BuiltIn
+namespace KnightForge.SvgPackImporter.Providers.BuiltIn
 {
-    [Icon("Packages/com.knightforge.iconimporter/Editor/Icons/IconProvider.png")]
+    [Icon("Packages/com.KnightForge.SvgPackImporter/Editor/Icons/IconProvider.png")]
     [CreateAssetMenu(fileName = "Tabler Icons", menuName = IconImporterConstants.IconProviders + "Tabler", order = IconImporterConstants.IconProvidersBuiltIn)]
     public sealed class TablerIconProvider : RepoIconProvider
     {

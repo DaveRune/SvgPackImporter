@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-namespace KnightForge.IconImporter.Providers.BuiltIn
+namespace KnightForge.SvgPackImporter.Providers.BuiltIn
 {
     [CreateAssetMenu(fileName = "Iconoir Icons", menuName = IconImporterConstants.IconProviders + "Iconoir", order = IconImporterConstants.IconProvidersBuiltIn)]
     public sealed class IconoirIconProvider : RepoIconProvider

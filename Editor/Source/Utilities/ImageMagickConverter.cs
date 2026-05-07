@@ -5,13 +5,13 @@ using System.Diagnostics;
 using System.IO;
 using System.Text;
 using System.Text.RegularExpressions;
-using KnightForge.IconImporter.Editor.Data;
-using KnightForge.IconImporter.Providers;
+using KnightForge.SvgPackImporter.Editor.Data;
+using KnightForge.SvgPackImporter.Providers;
 using UnityEditor;
 using UnityEngine;
 using Debug = UnityEngine.Debug;
 
-namespace KnightForge.IconImporter.Editor.Utilities
+namespace KnightForge.SvgPackImporter.Editor.Utilities
 {
     internal static class ImageMagickConverter
     {

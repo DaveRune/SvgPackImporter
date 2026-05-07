@@ -2,7 +2,7 @@ using System.Collections.Generic;
 using System.Text.RegularExpressions;
 using UnityEngine;
 
-namespace KnightForge.IconImporter.Providers.BuiltIn
+namespace KnightForge.SvgPackImporter.Providers.BuiltIn
 {
     [CreateAssetMenu(fileName = "Simple Icons", menuName = IconImporterConstants.IconProviders + "Simple Icons", order = IconImporterConstants.IconProvidersBuiltIn)]
     public sealed class SimpleIconsProvider : RepoIconProvider

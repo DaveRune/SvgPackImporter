@@ -1,10 +1,10 @@
 using System.Diagnostics;
 using System.IO;
-using KnightForge.IconImporter.Providers;
+using KnightForge.SvgPackImporter.Providers;
 using UnityEditor;
 using UnityEngine;
 
-namespace KnightForge.IconImporter.Editor.Inspectors
+namespace KnightForge.SvgPackImporter.Editor.Inspectors
 {
     [CustomEditor(typeof(IconProvider), true)]
     public class IconProviderInspector : UnityEditor.Editor

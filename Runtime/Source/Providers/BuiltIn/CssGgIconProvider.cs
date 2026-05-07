@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-namespace KnightForge.IconImporter.Providers.BuiltIn
+namespace KnightForge.SvgPackImporter.Providers.BuiltIn
 {
     [CreateAssetMenu(fileName = "CSS.GG Icons", menuName = IconImporterConstants.IconProviders + "css.gg", order = IconImporterConstants.IconProvidersBuiltIn)]
     public sealed class CssGgIconProvider : RepoIconProvider

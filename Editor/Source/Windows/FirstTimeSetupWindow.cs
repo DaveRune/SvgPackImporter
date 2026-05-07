@@ -1,14 +1,14 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
-using KnightForge.IconImporter.Editor.Data;
-using KnightForge.IconImporter.Editor.Utilities;
-using KnightForge.IconImporter.Providers;
-using KnightForge.IconImporter.Providers.BuiltIn;
+using KnightForge.SvgPackImporter.Editor.Data;
+using KnightForge.SvgPackImporter.Editor.Utilities;
+using KnightForge.SvgPackImporter.Providers;
+using KnightForge.SvgPackImporter.Providers.BuiltIn;
 using UnityEditor;
 using UnityEngine;
 
-namespace KnightForge.IconImporter.Editor.Windows
+namespace KnightForge.SvgPackImporter.Editor.Windows
 {
     internal sealed class FirstTimeSetupWindow : EditorWindow
     {

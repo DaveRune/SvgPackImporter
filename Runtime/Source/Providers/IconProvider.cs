@@ -4,9 +4,9 @@ using System.IO;
 using System.Text.RegularExpressions;
 using UnityEngine;
 
-namespace KnightForge.IconImporter.Providers
+namespace KnightForge.SvgPackImporter.Providers
 {
-    [Icon("Packages/com.knightforge.iconimporter/Editor/Icons/IconProvider.png")]
+    [Icon("Packages/com.KnightForge.SvgPackImporter/Editor/Icons/IconProvider.png")]
     public abstract class IconProvider : ScriptableObject
     {
         private const string ProvidersRoot = "IconProviders";

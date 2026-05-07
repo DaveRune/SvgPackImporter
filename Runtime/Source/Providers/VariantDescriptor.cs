@@ -1,6 +1,6 @@
 using UnityEngine;
 
-namespace KnightForge.IconImporter.Providers
+namespace KnightForge.SvgPackImporter.Providers
 {
     public enum IconStyle
     {

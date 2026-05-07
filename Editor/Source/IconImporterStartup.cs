@@ -1,8 +1,8 @@
-using KnightForge.IconImporter.Editor.Data;
-using KnightForge.IconImporter.Editor.Windows;
+using KnightForge.SvgPackImporter.Editor.Data;
+using KnightForge.SvgPackImporter.Editor.Windows;
 using UnityEditor;
 
-namespace KnightForge.IconImporter.Editor
+namespace KnightForge.SvgPackImporter.Editor
 {
     [InitializeOnLoad]
     internal static class IconImporterStartup

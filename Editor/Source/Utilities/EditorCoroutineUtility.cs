@@ -1,6 +1,6 @@
 using System.Collections;
 
-namespace KnightForge.IconImporter.Editor.Utilities
+namespace KnightForge.SvgPackImporter.Editor.Utilities
 {
     internal static class EditorCoroutineUtility
     {

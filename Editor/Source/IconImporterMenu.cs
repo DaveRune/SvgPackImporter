@@ -1,7 +1,7 @@
-using KnightForge.IconImporter.Editor.Windows;
+using KnightForge.SvgPackImporter.Editor.Windows;
 using UnityEditor;
 
-namespace KnightForge.IconImporter.Editor
+namespace KnightForge.SvgPackImporter.Editor
 {
     internal static class IconImporterMenu
     {
