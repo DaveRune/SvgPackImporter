@@ -10,7 +10,7 @@ using UnityEngine;
 
 namespace KnightForge.IconImporter.Editor.Windows
 {
-    public sealed class FirstTimeSetupWindow : EditorWindow
+    internal sealed class FirstTimeSetupWindow : EditorWindow
     {
         private static readonly string[] StepTitles = { "Welcome", "ImageMagick", "Providers", "Done" };
 

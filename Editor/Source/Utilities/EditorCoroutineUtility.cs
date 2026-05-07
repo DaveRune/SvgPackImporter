@@ -2,7 +2,7 @@ using System.Collections;
 
 namespace KnightForge.IconImporter.Editor.Utilities
 {
-    public static class EditorCoroutineUtility
+    internal static class EditorCoroutineUtility
     {
         public static EditorCoroutine StartCoroutine(IEnumerator routine, object owner)
         {

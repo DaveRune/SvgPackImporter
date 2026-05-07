@@ -5,7 +5,7 @@ using UnityEditor;
 namespace KnightForge.IconImporter.Editor
 {
     [InitializeOnLoad]
-    public static class IconImporterStartup
+    internal static class IconImporterStartup
     {
         static IconImporterStartup()
         {

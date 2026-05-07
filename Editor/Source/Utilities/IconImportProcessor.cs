@@ -12,7 +12,7 @@ using Object = UnityEngine.Object;
 
 namespace KnightForge.IconImporter.Editor.Utilities
 {
-    public static class IconImportProcessor
+    internal static class IconImportProcessor
     {
         public static void StartUpdate(IconPack pack, object coroutineOwner, Action onComplete = null)
         {

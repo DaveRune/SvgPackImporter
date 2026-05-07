@@ -3,10 +3,10 @@ using UnityEditor;
 
 namespace KnightForge.IconImporter.Editor
 {
-    public static class IconImporterMenu
+    internal static class IconImporterMenu
     {
         [MenuItem(EditorMenuConstants.MenuRoot + "/Setup")]
-        public static void OpenSetupWindow()
+        private static void OpenSetupWindow()
         {
             FirstTimeSetupWindow.ShowSetupWindow();
         }

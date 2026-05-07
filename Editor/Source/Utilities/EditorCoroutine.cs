@@ -5,7 +5,7 @@ using UnityEngine;
 
 namespace KnightForge.IconImporter.Editor.Utilities
 {
-    public sealed class EditorCoroutine
+    internal sealed class EditorCoroutine
     {
         private readonly Stack<IEnumerator> _stack;
         private readonly Object _unityOwner;

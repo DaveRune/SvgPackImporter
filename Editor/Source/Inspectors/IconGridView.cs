@@ -6,7 +6,7 @@ using Object = UnityEngine.Object;
 
 namespace KnightForge.IconImporter.Editor.Inspectors
 {
-    public sealed class IconGridView
+    internal sealed class IconGridView
     {
         private const int IconCellSpacing = 4;
         private const int IconCellSize = 64;

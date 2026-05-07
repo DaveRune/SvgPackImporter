@@ -13,7 +13,7 @@ using Debug = UnityEngine.Debug;
 
 namespace KnightForge.IconImporter.Editor.Utilities
 {
-    public static class ImageMagickConverter
+    internal static class ImageMagickConverter
     {
         // Cached for the editor session so per-icon preview generation doesn't repeatedly scan
         // Program Files. Cleared by InvalidateDetectionCache when the saved path changes.

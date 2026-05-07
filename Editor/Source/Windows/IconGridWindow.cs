@@ -4,7 +4,7 @@ using UnityEngine;
 
 namespace KnightForge.IconImporter.Editor.Windows
 {
-    public sealed class IconGridWindow : EditorWindow
+    internal sealed class IconGridWindow : EditorWindow
     {
         private bool _dragAsSprite = true;
         private IconGridView _grid;

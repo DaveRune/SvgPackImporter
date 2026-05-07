@@ -14,7 +14,7 @@ using UnityEngine;
 
 namespace KnightForge.IconImporter.Editor.Windows
 {
-    public sealed class IconManagerWindow : EditorWindow
+    internal sealed class IconManagerWindow : EditorWindow
     {
         // ── Constants ────────────────────────────────────────────────────────
         private const int IconPreviewSize = 50;
