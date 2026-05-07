@@ -8,8 +8,6 @@ namespace KnightForge.IconImporter.Editor.Utilities
         private const string UnknownDisplayName = "Unknown";
         private const string UnknownStableId = "unknown";
 
-        // Human-readable name used for the actual subasset and PNG file. Includes the renameable
-        // provider display name. Not safe to use as a long-lived lookup key — use StableKey for that.
         internal static string AssetName(IconProvider provider, string iconName, string variant)
         {
             var displayName = provider ? provider.name : UnknownDisplayName;
@@ -19,8 +17,6 @@ namespace KnightForge.IconImporter.Editor.Utilities
                 : $"{displayName}-{iconName}-{variant}-{stableId}";
         }
 
-        // Rename-invariant lookup key. Drops the renameable provider display name so dictionaries
-        // built from existing subassets remain valid after a provider asset is renamed.
         internal static string StableKey(IconProvider provider, string iconName, string variant)
         {
             var stableId = StableIdOrFallback(provider);

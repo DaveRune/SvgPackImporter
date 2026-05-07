@@ -15,8 +15,6 @@ namespace KnightForge.IconImporter.Editor.Utilities
 {
     internal static class ImageMagickConverter
     {
-        // Cached for the editor session so per-icon preview generation doesn't repeatedly scan
-        // Program Files. Cleared by InvalidateDetectionCache when the saved path changes.
         private static string _cachedExecutablePath;
         private static bool _cacheValid;
 
@@ -36,9 +34,6 @@ namespace KnightForge.IconImporter.Editor.Utilities
 
             var found = TryDetectInternal(out executablePath);
 
-            // If we discovered ImageMagick via fallback scan (not the saved path), persist it so
-            // future calls hit the saved-path branch immediately and so a subsequent Update click
-            // does not trigger another full scan.
             if (found)
             {
                 var settings = IconImporterSettings.Instance;
@@ -59,8 +54,6 @@ namespace KnightForge.IconImporter.Editor.Utilities
         {
             executablePath = "";
 
-            // Honour the path saved by the first-time setup wizard before scanning.
-            // Re-scanning is slow and ignores user-configured non-standard install locations.
             var savedPath = IconImporterSettings.Instance.ImageMagickPath;
             if (!string.IsNullOrEmpty(savedPath) && File.Exists(savedPath))
             {

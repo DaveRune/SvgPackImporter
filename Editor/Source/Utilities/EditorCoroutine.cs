@@ -28,9 +28,7 @@ namespace KnightForge.IconImporter.Editor.Utilities
 
         private void Update()
         {
-            // Stop automatically if the owning Unity object (e.g. an EditorWindow) was destroyed —
-            // there is nobody left to consume the coroutine's results and ticking against a dead
-            // reference can spam exceptions.
+            // Unity-null check (overloaded !): true if the owning Object was destroyed.
             if (_hasUnityOwner && !_unityOwner)
             {
                 Stop();

@@ -36,9 +36,6 @@ namespace KnightForge.IconImporter.Editor.Inspectors
 
             var provider = (IconProvider)target;
 
-            // Reload the manifest if svgRootFolder has changed since we last loaded it. Without
-            // this the inspector keeps showing the previous folder's "tick + icon count" until
-            // the user clicks away and back, which triggers OnEnable.
             var currentSvgRoot = serializedObject.FindProperty("svgRootFolder").stringValue;
             if (currentSvgRoot != _lastLoadedManifestRootFolder)
             {
@@ -208,8 +205,6 @@ namespace KnightForge.IconImporter.Editor.Inspectors
             "import or update icons from this source until the files are restored.\n\n" +
             "This cannot be undone.";
 
-        // Opens the folder itself, not its parent. EditorUtility.RevealInFinder selects the
-        // folder in its parent which is the wrong UX for a "Browse" button.
         private static void OpenFolder(string path)
         {
 #if UNITY_EDITOR_WIN

@@ -90,10 +90,6 @@ namespace KnightForge.IconImporter.Editor.Inspectors
                     EditorGUILayout.HelpBox(_updateCheckResult, MessageType.None);
             }
 
-            // Recovery path when SVGs exist on disk but the manifest is missing or out of date —
-            // for example after deleting the manifest, restoring files from version control, or
-            // adding extra SVGs to a downloaded repo by hand. Rebuilds the manifest from whatever
-            // is present without re-downloading.
             if (Directory.Exists(repoProvider.GetRootPath()))
             {
                 EditorGUILayout.Space(4);
@@ -238,7 +234,6 @@ namespace KnightForge.IconImporter.Editor.Inspectors
             var tempZip = Path.Combine(Path.GetDirectoryName(destPath), $"{provider.name}_temp.zip");
             Directory.CreateDirectory(Path.GetDirectoryName(tempZip));
 
-            // Stream directly to disk via DownloadHandlerFile so the entire zip never sits in memory.
             using var request = UnityWebRequest.Get(downloadUrl);
             request.downloadHandler = new DownloadHandlerFile(tempZip) { removeFileOnAbort = true };
             yield return request.SendWebRequest();

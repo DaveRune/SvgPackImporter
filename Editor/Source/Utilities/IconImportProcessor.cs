@@ -15,10 +15,6 @@ namespace KnightForge.IconImporter.Editor.Utilities
     {
         public static void StartUpdate(IconPack pack, object coroutineOwner, Action onComplete = null)
         {
-            // Re-detect on every Update click rather than trusting a stale flag — the user may have
-            // installed ImageMagick after first setup, or skipped the wizard entirely. Detection
-            // reads the saved path first then falls back to a platform scan, and persists any
-            // newly-found path so the next click is instant.
             if (!ImageMagickConverter.TryDetectImageMagick(out _))
             {
                 var installNow = EditorUtility.DisplayDialog(
@@ -80,10 +76,7 @@ namespace KnightForge.IconImporter.Editor.Utilities
             // whose source SVG was missing and were excluded from selectedIcons.
             var originalPackedIcons = targetPack.Icons.ToList();
 
-            // Cache existing subassets by their rename-invariant StableKey, derived from each
-            // PackedIcon's provider/iconName/variant. Looking up by texture.name would break
-            // when a provider asset is renamed; the stable key survives renames so we can
-            // update textures and sprites in-place and preserve Unity local file IDs.
+            // Keyed by StableKey so updates preserve Unity local file IDs across asset renames.
             var existingTextures = new Dictionary<string, Texture2D>();
             var existingSprites = new Dictionary<string, Sprite>();
 
