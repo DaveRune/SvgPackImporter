@@ -6,7 +6,7 @@ using UnityEngine;
 namespace KnightForge.SvgPackImporter.Providers.BuiltIn
 {
     [Icon("Packages/com.knightforge.svgpackimporter/Editor/Icons/IconProvider.png")]
-    [CreateAssetMenu(fileName = "Tabler Icons", menuName = IconImporterConstants.IconProviders + "Tabler", order = IconImporterConstants.IconProvidersBuiltIn)]
+    [CreateAssetMenu(fileName = "Tabler Icons", menuName = SvgPackImporterConstants.IconProviders + "Tabler", order = SvgPackImporterConstants.IconProvidersBuiltIn)]
     public sealed class TablerIconProvider : RepoIconProvider
     {
         public override string DefaultRepoUrl => "https://github.com/tabler/tabler-icons";

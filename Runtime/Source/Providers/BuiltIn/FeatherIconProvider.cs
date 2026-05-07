@@ -3,7 +3,7 @@ using UnityEngine;
 
 namespace KnightForge.SvgPackImporter.Providers.BuiltIn
 {
-    [CreateAssetMenu(fileName = "Feather Icons", menuName = IconImporterConstants.IconProviders + "Feather", order = IconImporterConstants.IconProvidersBuiltIn)]
+    [CreateAssetMenu(fileName = "Feather Icons", menuName = SvgPackImporterConstants.IconProviders + "Feather", order = SvgPackImporterConstants.IconProvidersBuiltIn)]
     public sealed class FeatherIconProvider : RepoIconProvider
     {
         public override string DefaultRepoUrl => "https://github.com/feathericons/feather";

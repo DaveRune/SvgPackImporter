@@ -4,7 +4,7 @@ using KnightForge.SvgPackImporter.Providers;
 using UnityEditor;
 using UnityEngine;
 
-namespace KnightForge.SvgPackImporter.Editor.Inspectors
+namespace KnightForge.SvgPackImporter.Inspectors
 {
     [CustomEditor(typeof(IconProvider), true)]
     public class IconProviderInspector : UnityEditor.Editor

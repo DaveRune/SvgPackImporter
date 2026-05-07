@@ -9,7 +9,7 @@ using UnityEngine;
 using Debug = UnityEngine.Debug;
 using Object = UnityEngine.Object;
 
-namespace KnightForge.SvgPackImporter.Editor.Utilities
+namespace KnightForge.SvgPackImporter.Utilities
 {
     internal static class IconImportProcessor
     {

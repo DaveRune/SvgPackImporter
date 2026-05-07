@@ -4,14 +4,13 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Text;
-using System.Text.RegularExpressions;
-using KnightForge.SvgPackImporter.Editor.Data;
+using KnightForge.SvgPackImporter.Data;
 using KnightForge.SvgPackImporter.Providers;
 using UnityEditor;
 using UnityEngine;
 using Debug = UnityEngine.Debug;
 
-namespace KnightForge.SvgPackImporter.Editor.Utilities
+namespace KnightForge.SvgPackImporter.Utilities
 {
     internal static class ImageMagickConverter
     {
@@ -36,12 +35,12 @@ namespace KnightForge.SvgPackImporter.Editor.Utilities
 
             if (found)
             {
-                var settings = IconImporterSettings.Instance;
+                var settings = SvgPackImporterSettings.Instance;
                 if (settings.ImageMagickPath != executablePath || !settings.ImageMagickDetected)
                 {
                     settings.ImageMagickPath = executablePath;
                     settings.ImageMagickDetected = true;
-                    IconImporterSettings.Save();
+                    SvgPackImporterSettings.Save();
                 }
             }
 
@@ -54,7 +53,7 @@ namespace KnightForge.SvgPackImporter.Editor.Utilities
         {
             executablePath = "";
 
-            var savedPath = IconImporterSettings.Instance.ImageMagickPath;
+            var savedPath = SvgPackImporterSettings.Instance.ImageMagickPath;
             if (!string.IsNullOrEmpty(savedPath) && File.Exists(savedPath))
             {
                 executablePath = savedPath;

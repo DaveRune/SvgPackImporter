@@ -1,9 +1,9 @@
-using KnightForge.SvgPackImporter.Editor.Windows;
+using KnightForge.SvgPackImporter.Windows;
 using UnityEditor;
 
-namespace KnightForge.SvgPackImporter.Editor
+namespace KnightForge.SvgPackImporter
 {
-    internal static class IconImporterMenu
+    internal static class SvgPackImporterMenu
     {
         [MenuItem(EditorMenuConstants.MenuRoot + "/Setup")]
         private static void OpenSetupWindow()

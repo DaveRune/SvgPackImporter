@@ -1,8 +1,8 @@
-using KnightForge.SvgPackImporter.Editor.Inspectors;
+using KnightForge.SvgPackImporter.Inspectors;
 using UnityEditor;
 using UnityEngine;
 
-namespace KnightForge.SvgPackImporter.Editor.Windows
+namespace KnightForge.SvgPackImporter.Windows
 {
     internal sealed class IconGridWindow : EditorWindow
     {

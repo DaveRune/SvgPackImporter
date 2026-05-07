@@ -1,7 +1,7 @@
 using UnityEditor;
 using UnityEngine;
 
-namespace KnightForge.SvgPackImporter.Editor.Utilities
+namespace KnightForge.SvgPackImporter.Utilities
 {
     /// Shared GUI drawing helpers reused across inspectors and editor windows.
     internal static class EditorGuiHelpers

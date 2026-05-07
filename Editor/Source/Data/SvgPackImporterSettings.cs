@@ -1,16 +1,15 @@
-using UnityEditor;
 using UnityEditorInternal;
 using UnityEngine;
 
-namespace KnightForge.SvgPackImporter.Editor.Data
+namespace KnightForge.SvgPackImporter.Data
 {
     /// Editor-only project settings persisted to the ProjectSettings folder so they do not
     /// ship with player builds and do not force consumers to create an Assets/Resources folder.
     [Icon("Packages/com.knightforge.svgpackimporter/Editor/Icons/IconImporterSettings.png")]
-    internal sealed class IconImporterSettings : ScriptableObject
+    internal sealed class SvgPackImporterSettings : ScriptableObject
     {
         private const string SettingsPath = "ProjectSettings/IconImporterSettings.asset";
-        private static IconImporterSettings _instance;
+        private static SvgPackImporterSettings _instance;
 
         [SerializeField] private string _imageMagickPath = "";
         [SerializeField] private bool _imageMagickDetected;
@@ -34,20 +33,20 @@ namespace KnightForge.SvgPackImporter.Editor.Data
             set => _hasCompletedSetup = value;
         }
 
-        public static IconImporterSettings Instance
+        public static SvgPackImporterSettings Instance
         {
             get
             {
                 if (_instance) return _instance;
 
                 var loaded = InternalEditorUtility.LoadSerializedFileAndForget(SettingsPath);
-                if (loaded.Length > 0 && loaded[0] is IconImporterSettings existing)
+                if (loaded.Length > 0 && loaded[0] is SvgPackImporterSettings existing)
                 {
                     _instance = existing;
                     return _instance;
                 }
 
-                _instance = CreateInstance<IconImporterSettings>();
+                _instance = CreateInstance<SvgPackImporterSettings>();
                 return _instance;
             }
         }

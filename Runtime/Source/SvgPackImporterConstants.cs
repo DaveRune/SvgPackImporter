@@ -1,6 +1,6 @@
 ﻿namespace KnightForge.SvgPackImporter
 {
-    internal static class IconImporterConstants
+    internal static class SvgPackImporterConstants
     {
         private const string Root = "IconImporter/";
         internal const string IconPack = Root + "Icon Pack";

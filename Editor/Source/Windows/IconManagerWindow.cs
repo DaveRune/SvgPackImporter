@@ -7,12 +7,12 @@ using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
-using KnightForge.SvgPackImporter.Editor.Utilities;
 using KnightForge.SvgPackImporter.Providers;
+using KnightForge.SvgPackImporter.Utilities;
 using UnityEditor;
 using UnityEngine;
 
-namespace KnightForge.SvgPackImporter.Editor.Windows
+namespace KnightForge.SvgPackImporter.Windows
 {
     internal sealed class IconManagerWindow : EditorWindow
     {

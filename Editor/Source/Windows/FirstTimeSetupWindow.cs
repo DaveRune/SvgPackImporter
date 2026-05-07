@@ -1,14 +1,14 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
-using KnightForge.SvgPackImporter.Editor.Data;
-using KnightForge.SvgPackImporter.Editor.Utilities;
+using KnightForge.SvgPackImporter.Data;
 using KnightForge.SvgPackImporter.Providers;
 using KnightForge.SvgPackImporter.Providers.BuiltIn;
+using KnightForge.SvgPackImporter.Utilities;
 using UnityEditor;
 using UnityEngine;
 
-namespace KnightForge.SvgPackImporter.Editor.Windows
+namespace KnightForge.SvgPackImporter.Windows
 {
     internal sealed class FirstTimeSetupWindow : EditorWindow
     {
@@ -266,7 +266,7 @@ namespace KnightForge.SvgPackImporter.Editor.Windows
 
         private void DrawCompleteStep()
         {
-            var settings = IconImporterSettings.Instance;
+            var settings = SvgPackImporterSettings.Instance;
 
             GUILayout.Space(16);
             GUILayout.Label("Setup Complete!", EditorStyles.boldLabel);
@@ -316,7 +316,7 @@ namespace KnightForge.SvgPackImporter.Editor.Windows
 
         private void SaveSettings()
         {
-            var settings = IconImporterSettings.Instance;
+            var settings = SvgPackImporterSettings.Instance;
             var pathToSave = !string.IsNullOrEmpty(_manualPath) ? _manualPath : _detectedPath;
 
             if (!string.IsNullOrEmpty(pathToSave) && File.Exists(pathToSave))
@@ -326,7 +326,7 @@ namespace KnightForge.SvgPackImporter.Editor.Windows
             }
 
             settings.HasCompletedSetup = true;
-            IconImporterSettings.Save();
+            SvgPackImporterSettings.Save();
             ImageMagickConverter.InvalidateDetectionCache();
         }
 

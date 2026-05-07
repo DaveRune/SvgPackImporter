@@ -4,7 +4,7 @@ using UnityEngine;
 
 namespace KnightForge.SvgPackImporter.Providers.BuiltIn
 {
-    [CreateAssetMenu(fileName = "Simple Icons", menuName = IconImporterConstants.IconProviders + "Simple Icons", order = IconImporterConstants.IconProvidersBuiltIn)]
+    [CreateAssetMenu(fileName = "Simple Icons", menuName = SvgPackImporterConstants.IconProviders + "Simple Icons", order = SvgPackImporterConstants.IconProvidersBuiltIn)]
     public sealed class SimpleIconsProvider : RepoIconProvider
     {
         public override string DefaultRepoUrl => "https://github.com/simple-icons/simple-icons";

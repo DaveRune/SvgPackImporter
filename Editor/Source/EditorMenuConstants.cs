@@ -1,4 +1,4 @@
-namespace KnightForge.SvgPackImporter.Editor
+namespace KnightForge.SvgPackImporter
 {
     public static class EditorMenuConstants
     {
