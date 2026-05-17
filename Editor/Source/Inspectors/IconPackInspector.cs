@@ -8,7 +8,7 @@ using UnityEngine;
 namespace KnightForge.SvgPackImporter.Inspectors
 {
     [CustomEditor(typeof(IconPack))]
-    public sealed class IconPackInspector : UnityEditor.Editor
+    public sealed class IconPackInspector : Editor
     {
         private static readonly Color UpdateColor = new(0.25f, 0.65f, 0.25f);
         private static readonly Color MissingSourceColor = new(0.85f, 0.2f, 0.2f, 1f);
@@ -53,8 +53,8 @@ namespace KnightForge.SvgPackImporter.Inspectors
 
             EditorGUILayout.Space(10);
             EditorGUILayout.LabelField("Conversion Settings", EditorStyles.boldLabel);
-            EditorGUILayout.IntSlider(_iconSize, 16, 256, new GUIContent("Icon Size (px)"));
-            EditorGUILayout.Slider(_strokeWidth, 0.5f, 3.0f, new GUIContent("Stroke Width"));
+            EditorGUILayout.IntSlider(_iconSize, 16, 4096, new GUIContent("Icon Size (px)"));
+            EditorGUILayout.Slider(_strokeWidth, 0.5f, 64f, new GUIContent("Stroke Width"));
             EditorGUILayout.PropertyField(_iconColor, new GUIContent("Icon Color"));
 
             EditorGUILayout.Space(10);
