@@ -35,7 +35,7 @@ namespace KnightForge.SvgPackImporter.Inspectors
         private static void DrawDragModeToolbar(int iconCount, bool dragAsSprite, Action<bool> onDragModeChanged)
         {
             EditorGUILayout.BeginHorizontal();
-            EditorGUILayout.LabelField($"Icons ({iconCount})", EditorStyles.boldLabel);
+            EditorGUILayout.LabelField($"Icons ({iconCount})", EditorStyles.boldLabel, GUILayout.Width(80));
             GUILayout.FlexibleSpace();
             EditorGUILayout.LabelField("Drag as:", GUILayout.Width(55));
             var newMode = GUILayout.Toolbar(dragAsSprite ? 0 : 1, new[] { "Sprite", "Texture2D" },

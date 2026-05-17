@@ -55,6 +55,7 @@ namespace KnightForge.SvgPackImporter.Windows
         private Vector2 _browseScroll;
 
         private GUIStyle _centeredLabelStyle;
+        private GUIStyle _clearButtonStyle;
         private bool _hoveredIsMissing;
 
         // ── Hover tooltip ─────────────────────────────────────────────────────
@@ -72,6 +73,7 @@ namespace KnightForge.SvgPackImporter.Windows
         private List<IconProvider> _providers = new();
 
         private string _searchText = "";
+        private bool _filterIncluded;
 
         // ── Shift-click anchor ────────────────────────────────────────────────
         private ShiftClickGrid _shiftAnchorGrid = ShiftClickGrid.None;
@@ -241,7 +243,19 @@ namespace KnightForge.SvgPackImporter.Windows
         private void DrawSearchBar()
         {
             EditorGUILayout.LabelField("Search", EditorStyles.boldLabel);
-            var newSearch = EditorGUILayout.TextField("Filter icons...", _searchText);
+
+            EnsureClearButtonStyle();
+            EditorGUILayout.BeginHorizontal();
+            var newSearch = EditorGUILayout.TextField(_searchText, EditorStyles.toolbarSearchField);
+            using (new EditorGUI.DisabledScope(string.IsNullOrEmpty(newSearch)))
+            {
+                if (GUILayout.Button("✕", _clearButtonStyle, GUILayout.Width(18), GUILayout.Height(18)))
+                {
+                    newSearch = "";
+                    GUI.FocusControl(null);
+                }
+            }
+            EditorGUILayout.EndHorizontal();
 
             if (newSearch != _searchText)
             {
@@ -276,7 +290,18 @@ namespace KnightForge.SvgPackImporter.Windows
 
         private void DrawIncludedGrid()
         {
+            EditorGUILayout.BeginHorizontal();
             EditorGUILayout.LabelField($"Included Icons ({_filteredIncluded.Count} shown)", EditorStyles.boldLabel);
+            GUILayout.FlexibleSpace();
+            var newFilterIncluded = GUILayout.Toggle(_filterIncluded, "Filter");
+            EditorGUILayout.EndHorizontal();
+
+            if (newFilterIncluded != _filterIncluded)
+            {
+                _filterIncluded = newFilterIncluded;
+                _includedPage = 0;
+                RefreshFiltered();
+            }
 
             var pageCount = Mathf.Max(1, (_filteredIncluded.Count + IconsPerPage - 1) / IconsPerPage);
             _includedPage = Mathf.Clamp(_includedPage, 0, pageCount - 1);
@@ -809,7 +834,7 @@ namespace KnightForge.SvgPackImporter.Windows
                                 _embeddedTextureFallback[key] = packed.texture;
                         }
 
-                        if (!hasSearch || MatchesSearch(icon))
+                        if (!hasSearch || !_filterIncluded || MatchesSearch(icon))
                             _filteredIncluded.Add(entry);
                     }
 
@@ -834,7 +859,7 @@ namespace KnightForge.SvgPackImporter.Windows
                     _embeddedTextureFallback[key] = packed.texture;
 
                 var synthetic = new IconEntry { name = packed.iconName, variant = packed.variant };
-                if (hasSearch && !MatchesSearch(synthetic)) continue;
+                if (hasSearch && _filterIncluded && !MatchesSearch(synthetic)) continue;
                 _filteredIncluded.Add(new ProviderIconEntry(synthetic, packed.provider));
             }
         }
@@ -903,6 +928,19 @@ namespace KnightForge.SvgPackImporter.Windows
             {
                 normal = { textColor = MissingTooltipTextColor },
                 fontStyle = FontStyle.Bold
+            };
+        }
+
+        private void EnsureClearButtonStyle()
+        {
+            if (_clearButtonStyle != null) return;
+            _clearButtonStyle = new GUIStyle(EditorStyles.label)
+            {
+                alignment = TextAnchor.MiddleCenter,
+                fontSize = 12,
+                padding = new RectOffset(0, 0, 0, 0),
+                margin = new RectOffset(2, 2, 2, 2),
+                hover = { textColor = Color.white }
             };
         }
 
