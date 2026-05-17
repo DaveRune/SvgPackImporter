@@ -1,5 +1,9 @@
 # Changelog
 
+## [1.2.0] - 2026-05-17
+
+Display 'to be added' icons more clearly in the Icon Manager 
+
 ## [1.1.0] - 2026-05-17
 
 Minor UI improvements  
