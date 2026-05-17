@@ -74,6 +74,7 @@ namespace KnightForge.SvgPackImporter.Windows
 
         private string _searchText = "";
         private bool _filterIncluded;
+        private bool _pendingAdditionsDirty;
 
         // ── Shift-click anchor ────────────────────────────────────────────────
         private ShiftClickGrid _shiftAnchorGrid = ShiftClickGrid.None;
@@ -137,6 +138,13 @@ namespace KnightForge.SvgPackImporter.Windows
             DrawBrowseGrid();
             DrawControls();
             DrawHoverTooltip();
+
+            if (_pendingAdditionsDirty)
+            {
+                _pendingAdditionsDirty = false;
+                RefreshFiltered();
+                Repaint();
+            }
         }
 
         public static void ShowWindow(IconPack pack)
@@ -319,9 +327,11 @@ namespace KnightForge.SvgPackImporter.Windows
                 var entry = _filteredIncluded[i];
                 var key = EntryKey(entry);
                 var isPendingDeletion = _pendingDeletions.Contains(key);
+                var isPendingAddition = _pendingAdditions.ContainsKey(key);
 
                 IconCellState state;
-                if (isPendingDeletion) state = IconCellState.PendingDeletion;
+                if (isPendingAddition) state = IconCellState.PendingAdd;
+                else if (isPendingDeletion) state = IconCellState.PendingDeletion;
                 else if (_missingSvgKeys.Contains(key)) state = IconCellState.MissingFromManifest;
                 else state = IconCellState.Imported;
 
@@ -336,7 +346,12 @@ namespace KnightForge.SvgPackImporter.Windows
                     }
                     else
                     {
-                        if (isPendingDeletion) _pendingDeletions.Remove(key);
+                        if (isPendingAddition)
+                        {
+                            _pendingAdditions.Remove(key);
+                            _pendingAdditionsDirty = true;
+                        }
+                        else if (isPendingDeletion) _pendingDeletions.Remove(key);
                         else _pendingDeletions.Add(key);
                         _shiftAnchorGrid = ShiftClickGrid.Included;
                         _shiftAnchorIndex = i;
@@ -426,6 +441,7 @@ namespace KnightForge.SvgPackImporter.Windows
                         _shiftAnchorIndex >= 0)
                     {
                         ApplyRangeToggleBrowse(_shiftAnchorIndex, i, importedKeys);
+                        _pendingAdditionsDirty = true;
                     }
                     else
                     {
@@ -438,6 +454,7 @@ namespace KnightForge.SvgPackImporter.Windows
                         {
                             if (isPendingAddition) _pendingAdditions.Remove(key);
                             else _pendingAdditions[key] = entry;
+                            _pendingAdditionsDirty = true;
                         }
 
                         _shiftAnchorGrid = ShiftClickGrid.Browse;
@@ -844,6 +861,16 @@ namespace KnightForge.SvgPackImporter.Windows
             }
 
             _staleManifestProviders = staleProviders.ToList();
+
+            // Pending additions are mirrored into the Included grid so the user can see what's queued.
+            foreach (var (key, entry) in _pendingAdditions)
+            {
+                if (matchedKeys.Contains(key)) continue;
+                if (!entry.provider) continue;
+                if (!_activeVariants.Contains($"{ProviderKey(entry.provider)}/{entry.entry.variant}")) continue;
+                if (hasSearch && _filterIncluded && !MatchesSearch(entry.entry)) continue;
+                _filteredIncluded.Add(entry);
+            }
 
             // State 2: icon is in the pack but no longer in any manifest (manifest was rebuilt after SVG deletion).
             // Skip variants that are currently inactive — they are simply hidden, not orphaned.
