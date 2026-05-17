@@ -1,8 +1,14 @@
 # Changelog
 
-## [1.0.1] - 2026-05-011
+## [1.1.0] - 2026-05-17
 
-Fixed conflicting .meta guids in other packages
+Minor UI improvements  
+Allow larger icons and strokes  
+Fix typo in changelog
+
+## [1.0.1] - 2026-05-11
+
+Fixed conflicting .meta guids in other packages  
 Added gif to readme
 
 ## [1.0.0] - 2026-05-07
