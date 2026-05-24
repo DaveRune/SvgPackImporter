@@ -1,5 +1,10 @@
 # Changelog
 
+## [1.3.0] - 2026-05-24
+
+Detect unsaved changes in the Icon Manager and prompt on close
+Add a "Manage Icons" button to the popout icon window
+
 ## [1.2.0] - 2026-05-17
 
 Display 'to be added' icons more clearly in the Icon Manager 
