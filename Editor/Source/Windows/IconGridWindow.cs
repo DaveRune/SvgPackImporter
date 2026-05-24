@@ -27,6 +27,8 @@ namespace KnightForge.SvgPackImporter.Windows
 
             _scroll = EditorGUILayout.BeginScrollView(_scroll);
             _grid.Draw(_pack, _dragAsSprite, val => _dragAsSprite = val, Repaint);
+            if (GUILayout.Button("Manage Icons"))
+                IconManagerWindow.ShowWindow(_pack);
             if (GUILayout.Button("Locate Icon Pack"))
             {
                 Selection.activeObject = _pack;
