@@ -109,6 +109,8 @@ namespace KnightForge.SvgPackImporter.Windows
 
         private void OnGUI()
         {
+            UpdateUnsavedChangesFlag();
+
             _hoveredTooltip = null;
             _hoveredIsMissing = false;
 
@@ -153,7 +155,31 @@ namespace KnightForge.SvgPackImporter.Windows
             window._targetPack = pack;
             window.minSize = new Vector2(522, 750);
             window.maxSize = new Vector2(522, 2000);
+            window.saveChangesMessage = "You have pending icon additions or removals.\nApply them before closing?";
             window.InitialiseProviders();
+        }
+
+        // ── Unsaved changes ──────────────────────────────────────────────────
+
+        private void UpdateUnsavedChangesFlag()
+        {
+            hasUnsavedChanges = _pendingAdditions.Count > 0 || _pendingDeletions.Count > 0;
+        }
+
+        public override void SaveChanges()
+        {
+            OnUpdateIcons();
+            UpdateUnsavedChangesFlag();
+            base.SaveChanges();
+        }
+
+        public override void DiscardChanges()
+        {
+            _pendingAdditions.Clear();
+            _pendingDeletions.Clear();
+            _pendingAdditionsDirty = true;
+            UpdateUnsavedChangesFlag();
+            base.DiscardChanges();
         }
 
         // ── Initialisation ────────────────────────────────────────────────────
