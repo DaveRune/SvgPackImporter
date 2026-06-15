@@ -1,5 +1,10 @@
 # Changelog
 
+## [1.3.1] - 2026-06-15
+
+Fixed icon previews getting stuck on "…" when searching mid-render
+Failed previews now show a warning and retry instead of hanging forever
+
 ## [1.3.0] - 2026-05-24
 
 Detect unsaved changes in the Icon Manager and prompt on close
