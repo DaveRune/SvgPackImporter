@@ -21,6 +21,7 @@ namespace KnightForge.SvgPackImporter.Windows
         private const int IconsPerPage = 50;
         private const int IconGridColumns = 10;
         private const int PreviewBorderWidth = 2;
+        private const int PreviewMaxAttempts = 3;
 
         private const string NoVariantsName = "All";
 
@@ -48,6 +49,8 @@ namespace KnightForge.SvgPackImporter.Windows
         private readonly HashSet<string> _pendingDeletions = new();
 
         private readonly Dictionary<string, Texture2D> _previewCache = new();
+        private readonly Dictionary<string, int> _previewAttempts = new();
+        private readonly HashSet<string> _failedPreviews = new();
         private readonly ConcurrentQueue<string> _readyToLoad = new();
 
         private HashSet<string> _activeVariants = new();
@@ -103,6 +106,8 @@ namespace KnightForge.SvgPackImporter.Windows
             foreach (var tex in _previewCache.Values.Where(t => t))
                 DestroyImmediate(tex);
             _previewCache.Clear();
+            _previewAttempts.Clear();
+            _failedPreviews.Clear();
         }
 
         // ── GUI ───────────────────────────────────────────────────────────────
@@ -595,6 +600,8 @@ namespace KnightForge.SvgPackImporter.Windows
 
             if (preview)
                 GUI.DrawTexture(cellRect, preview, ScaleMode.ScaleToFit, true);
+            else if (_failedPreviews.Contains(PreviewKey(entry)))
+                GUI.Label(cellRect, "⚠", _centeredLabelStyle);
             else
                 GUI.Label(cellRect, "…", _centeredLabelStyle);
 
@@ -703,6 +710,7 @@ namespace KnightForge.SvgPackImporter.Windows
         private Texture2D GetPreview(ProviderIconEntry entry)
         {
             var key = PreviewKey(entry);
+            if (_failedPreviews.Contains(key)) return null;
             if (_previewCache.TryGetValue(key, out var cached)) return cached;
 
             _previewCache[key] = null;
@@ -754,7 +762,17 @@ namespace KnightForge.SvgPackImporter.Windows
                 while (_readyToLoad.TryDequeue(out var key))
                 {
                     var pngPath = Path.Combine(_previewTempFolder, $"{key}.png");
-                    if (!File.Exists(pngPath)) continue;
+                    if (!File.Exists(pngPath))
+                    {
+                        // Conversion produced no file. Retry a few times, then mark the key failed so the
+                        // cell shows a warning instead of looking identical to a still-loading cell forever.
+                        var attempts = (_previewAttempts.TryGetValue(key, out var a) ? a : 0) + 1;
+                        _previewAttempts[key] = attempts;
+                        if (attempts >= PreviewMaxAttempts) _failedPreviews.Add(key);
+                        else _previewCache.Remove(key);
+                        repaintNeeded = true;
+                        continue;
+                    }
 
                     var tex = new Texture2D(2, 2, TextureFormat.RGBA32, false);
                     tex.LoadImage(File.ReadAllBytes(pngPath));

@@ -231,12 +231,17 @@ namespace KnightForge.SvgPackImporter.Utilities
                 };
 
                 using var process = Process.Start(processInfo);
+
+                // Drain both pipes on background threads before waiting. Calling WaitForExit while a
+                // redirected pipe fills its buffer deadlocks: the child blocks writing, we block waiting.
+                _ = process.StandardOutput.ReadToEndAsync();
+                var stderrTask = process.StandardError.ReadToEndAsync();
                 process.WaitForExit();
 
                 if (process.ExitCode == 0)
                     return true;
 
-                var error = process.StandardError.ReadToEnd();
+                var error = stderrTask.Result;
                 if (!string.IsNullOrEmpty(error))
                     Debug.LogError($"ImageMagick: {error}");
 
