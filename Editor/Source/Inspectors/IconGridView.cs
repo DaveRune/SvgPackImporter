@@ -1,4 +1,5 @@
 using System;
+using System.IO;
 using KnightForge.SvgPackImporter.Utilities;
 using UnityEditor;
 using UnityEngine;
@@ -106,6 +107,11 @@ namespace KnightForge.SvgPackImporter.Inspectors
                         repaint();
                         evt.Use();
                         break;
+
+                    case EventType.ContextClick when isHover:
+                        ShowContextMenu(pack, icon);
+                        evt.Use();
+                        break;
                 }
 
                 column++;
@@ -129,6 +135,92 @@ namespace KnightForge.SvgPackImporter.Inspectors
             GUIUtility.hotControl = 0;
             _dragTarget = null;
             Event.current.Use();
+        }
+
+        private static void ShowContextMenu(IconPack pack, IconPack.PackedIcon icon)
+        {
+            var menu = new GenericMenu();
+            menu.AddItem(new GUIContent("Create Loose PNG"), false, () => ExportLoosePng(pack, icon));
+            menu.ShowAsContext();
+        }
+
+        // Writes a standalone copy of the icon's texture as a PNG next to the pack asset. The pack is
+        // never touched; the loose file is pinged so it's easy to find without stealing the selection.
+        private static void ExportLoosePng(IconPack pack, IconPack.PackedIcon icon)
+        {
+            if (!icon.texture)
+            {
+                EditorUtility.DisplayDialog("Export Failed", "This icon has no texture to export.", "OK");
+                return;
+            }
+
+            var packPath = AssetDatabase.GetAssetPath(pack);
+            if (string.IsNullOrEmpty(packPath))
+            {
+                EditorUtility.DisplayDialog("Export Failed", "Save the Icon Pack asset to disk first.", "OK");
+                return;
+            }
+
+            var baseName = string.IsNullOrEmpty(icon.variant) ? icon.iconName : $"{icon.iconName}-{icon.variant}";
+            var folder = Path.GetDirectoryName(packPath);
+            var uniquePath = AssetDatabase.GenerateUniqueAssetPath($"{folder}/{baseName}.png".Replace('\\', '/'));
+
+            File.WriteAllBytes(uniquePath, EncodeReadable(icon.texture));
+            AssetDatabase.ImportAsset(uniquePath);
+            ApplySpriteImportSettings(uniquePath);
+
+            var asset = AssetDatabase.LoadAssetAtPath<Texture2D>(uniquePath);
+            if (asset) EditorGUIUtility.PingObject(asset);
+        }
+
+        // Imports the loose PNG as an uncompressed sprite ready to slice. Only the values that differ from
+        // Unity's sprite defaults are set; everything else (pivot, pixels-per-unit, max size) is left default.
+        private static void ApplySpriteImportSettings(string assetPath)
+        {
+            if (AssetImporter.GetAtPath(assetPath) is not TextureImporter importer)
+                return;
+
+            var settings = new TextureImporterSettings();
+            importer.ReadTextureSettings(settings);
+            settings.textureType = TextureImporterType.Sprite;
+            settings.spriteMode = (int)SpriteImportMode.Single;
+            settings.npotScale = TextureImporterNPOTScale.None;
+            settings.spriteMeshType = SpriteMeshType.FullRect;
+            settings.spriteGenerateFallbackPhysicsShape = false;
+            settings.alphaIsTransparency = true;
+            importer.SetTextureSettings(settings);
+
+            // Uncompressed RGBA32 keeps the hard edges and alpha crisp — block compression smears them.
+            var platform = importer.GetDefaultPlatformTextureSettings();
+            platform.format = TextureImporterFormat.RGBA32;
+            importer.SetPlatformTextureSettings(platform);
+
+            importer.SaveAndReimport();
+        }
+
+        // Encode directly when the texture is CPU-readable (the usual case); otherwise blit through a
+        // RenderTexture first so the export still works for textures Unity won't let us read directly.
+        private static byte[] EncodeReadable(Texture2D source)
+        {
+            if (source.isReadable)
+                return source.EncodeToPNG();
+
+            var rt = RenderTexture.GetTemporary(source.width, source.height, 0,
+                RenderTextureFormat.ARGB32, RenderTextureReadWrite.Linear);
+            var previous = RenderTexture.active;
+            Graphics.Blit(source, rt);
+            RenderTexture.active = rt;
+
+            var readable = new Texture2D(source.width, source.height, TextureFormat.RGBA32, false);
+            readable.ReadPixels(new Rect(0, 0, rt.width, rt.height), 0, 0);
+            readable.Apply();
+
+            RenderTexture.active = previous;
+            RenderTexture.ReleaseTemporary(rt);
+
+            var bytes = readable.EncodeToPNG();
+            Object.DestroyImmediate(readable);
+            return bytes;
         }
 
         private void EnsureStyles()

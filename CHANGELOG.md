@@ -1,5 +1,9 @@
 # Changelog
 
+## [1.4.0] - 2026-06-16
+
+Right-click any icon in the inspector or popout to export it as a loose PNG file
+
 ## [1.3.1] - 2026-06-15
 
 Fixed icon previews getting stuck on "…" when searching mid-render
